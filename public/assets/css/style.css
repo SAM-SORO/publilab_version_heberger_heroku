@@ -1,0 +1,72 @@
+ @import url('https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap');
+
+*{
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Poppins', sans-serif;
+}
+
+/* Style de la page d'article-visiteurs */
+.custom-height {
+    height: 88vh;
+}
+
+.sign-height{
+    height: 90vh;
+}
+
+body {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh; /* 100% de la hauteur de la vue (viewport height) */
+}
+
+.container {
+    flex: 1; /* Pour que le contenu prenne l'espace restant */
+}
+
+.article:hover{
+    box-shadow: 2px 1px 0px 0px rgba(0,0,0,0.7);
+}
+
+.search-btn{
+    height: 50px;
+}
+
+/* navbar style */
+.custom-nav{
+    -webkit-box-shadow: -4px -4px 12px -4px rgba(0,0,0,0.09);
+    -moz-box-shadow: -4px -4px 12px -4px rgba(0,0,0,0.09);
+    box-shadow: 6px 8px 31px -3px rgba(0,0,0,0.1);
+}
+
+/* style de de la page publier du chercheur */
+.footer-sidebar{
+    list-style-type: none;
+}
+
+.logout-label:hover, .parameter-label:hover{
+    text-decoration: underline;
+}
+
+/* template page de visite */
+
+.btn-submit:active{
+    transform: 0.3s;
+    opacity: 0.4;
+}
+
+/* Style du footer */
+footer {
+    margin-top: auto; /* Marge en haut automatique pour pousser le footer vers le bas */
+}
+
+@media screen and (max-width: 765px)  {
+    .laisse{
+        margin-top: 130px !important;
+    }
+    .navbar-nav{
+        margin-left: 13px;
+    }
+}
