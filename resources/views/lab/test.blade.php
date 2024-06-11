@@ -1,80 +1,110 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="X-UA-Compatible" content="ie=edge">
-    <title>PubliLab-Page de Connexion</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css" integrity="sha384-xOolHFLEh07PJGoPkLv1IbcEPTNtaed2xpHsD9ESMhqIYd0nLMwNLD69Npy4HI+N" crossorigin="anonymous">
-    <link rel="stylesheet" href="{{asset('fontawesome-free-6.5.1-web/css/all.css')}}">
-    <style>
-        .custom-height {
-            height: 88vh;
-            /* background-image: url("{{asset('img/publab Acceuil.jpg')}}");
-            background-size: cover;
-            background-repeat: no-repeat */
-        }
-        .foot{
-            margin-top: -20px;
-        }
-    </style>
-</head>
-<body class="">
-    <nav class="navbar navbar-expand-md fixed-top navbar-light bg-white px-4 py-3">
-        <div class="col-3">
-            <a class="navbar-brand" href="#"><span class="text-success">Publi</span><span class="text-dark">lab</span></a>
-        </div>
-        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
-            <span class="navbar-toggler-icon"></span>
-        </button>
-        <div class="collapse navbar-collapse justify-content-center" id="navbarNav">
-            <div class="navbar-nav mx-4">
-                <a class="nav-link active font-weight-bold" href="#">Accueil</a>
-                <a class="nav-link  active font-weight-bold" href="#">Recherches</a>
-            </div>
-            <div class="text-center">
-                <button type="button" class="btn btn-outline-success mr-5 d-none d-md-block">Se connecter</button>
-            </div>
-        </div>
+@php
+    $excludeFooter = true;
+@endphp
 
-    </nav>
+@extends('baseVisite')
 
-    <div class="container-fluid bg-light d-flex align-items-center justify-content-center mt-5  mt-sm-5  mt-md-5 custom-height">
-        <form action="" class="shadow-lg p-3 mb-5 bg-white rounded autocomplete-off col-12 col-sm-10 col-md-9 col-lg-4 mt-5 mt-sm-5  mt-md-5">
-            <div class="form-group">
-                <label for="nom">Email</label>
-                <input type="email" class="form-control" id="nom">
-            </div>
-            <div class="form-group">
-                <label for="prenom">Mot de passe</label>
-                <input type="password" class="form-control" id="prenom">
-            </div>
-            <div class="row p-3 justify-content-between">
-                <div class="form-check mb-2 mr-sm-2">
-                    <input class="form-check-input" type="checkbox" id="inlineFormCheck">
-                    <label class="form-check-label" for="inlineFormCheck"> Se souvenir de moi</label>
+@section('title','Login')
+
+{{-- ajouter ceci au menu du navbar --}}
+@section('Authentification')
+    <a class="nav-link font-weight-bold active" href="#">Authentification</a>
+@endsection
+
+@section ('contenue-main')
+
+    @if(session()->has('error'))
+        {{Session::get('error')}}
+    @endif
+
+    <div class="sign-height bg-light mx-auto justify-content-center py-5 mt-4">
+        {{-- <div class="alert alert-danger alert-dismissible fade show col-10 col-lg-4 col-sm-8 col-md-9 mt-3 mx-auto" role="alert" id="alert-danger-login">
+            les informations saisis sont incorrect
+            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+              <span aria-hidden="true">&times;</span>
+            </button>
+        </div> --}}
+
+        <div class="container-fluid d-flex align-items-center justify-content-center" id="login">
+
+            <form action="{{route("submitLogin")}}" method="POST" id="form-login" class="shadow p-3 mb-5 bg-white rounded autocomplete-off col-12 col-sm-10 col-md-9 col-lg-4 mt-5 mt-sm-5 mt-md-5">
+                @csrf
+                <div class="text-center"><h2>Connexion</h2></div><hr>
+
+                <div class="form-group mb-4 mt-2">
+                    <label for="email">Email</label>
+                    <input type="email" class="form-control @error('email') is-invalid @enderror" id="email" name="email_visit" required autocomplete="email" autofocus value="{{old('email')}}">
+                    <small id="error-email" class="form-text text-danger"></small>
+                    @error('email')
+                        <div class="error"><small id="error-email" class="form-text text-muted"></small></div>
+                    @enderror
                 </div>
-                <div>
-                    <a href="#">Mot de passe oublié !</a>
+                <div class="form-group mb-4">
+                    <label for="password">Mot de passe</label>
+                    <div class="input-group">
+                        <input type="password" class="form-control @error('password') is-invalid @enderror" id="password" name="password_visit">
+
+                        <div class="input-group-append">
+                            <span class="input-group-text" id="toggle-password1">
+                                <i class="fa fa-eye-slash" aria-hidden="true"></i>
+                            </span>
+                        </div>
+                    </div>
+                    <small id="error-password" class="form-text text-danger"></small>
+                    @error('password')
+                        <div class="error"><small id="error-password" class="form-text text-muted"></small></div>
+                    @enderror
                 </div>
-            </div>
-            <button type="submit" class="btn mb-2 w-100"  style="background-color: #9b59b6; color: white; border:#9b59b6 !important;">Se connecter</button>
-            <div class="my-2 text-center"> Pas de compte ? <a href="#" class="ml-2"> S'inscrire</a></div>
-        </form>
+                <div class="row p-3 justify-content-between">
+                    <div class="custom-control custom-switch">
+                        <input type="checkbox" class="custom-control-input" id="customSwitch1">
+                        <label class="custom-control-label" for="customSwitch1">Se souvenir de moi</label>
+                      </div>
+                    <div>
+                        <a href="#">Mot de passe oublié !</a>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn mb-2 w-100" style="background-color: #9b59b6; color: white; border:#9b59b6" id="submit-connexion" >Se connecter</button>
+                {{-- style="background-color: #9b59b6; color: white; border:#9b59b6 !important; --}}
+
+                <div class="my-2 text-center mt-2 "> Pas de compte ? <a href="{{route('register')}}" class="ml-2"> S'inscrire</a></div>
+            </form>
+        </div>
     </div>
 
-    <footer>
-        <div class="container-fluid bg-white py-3 text-center foot">
-            <div>
-                &copy; Copy right By INPHB tous droit reserver
-                <div><i class="fas fa-bell"></i></div>
-                <i class="fas fa-bell"></i>
-                <i class="fas fa-bell"></i>
-            </div>
-        </div>
-    </footer>
+    <script>
+        document.querySelector('.navbar').classList.add('bg-light');
+        $dac = document.querySelector('.btn_authentifier');
 
-    <script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.slim.min.js" integrity="sha384-DfXdz2htPH0lsSSs5nCTpuj/zy4C+OGpamoFVy38MVBnE+IbbVYUew+OrCXaRkfj" crossorigin="anonymous"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-Fy6S3B9q64WdZWQUiU+q4/2Lc9npb8tCaSX9FK7E8HnRr0Jz8D6OP9dO5Vg3Q9ct" crossorigin="anonymous"></script>
-</body>
-</html>
+    </script>
+
+@endsection
+
+
+
+
+
+
+
+
+@extends('baseVisite')
+
+{{-- titre de la page --}}
+@section('title', 'Publilab')
+
+
+
+@section('contenue-main')
+{{-- donner le contenue de la page d'acceuil --}}
+
+
+<script>
+
+    // Sélectionne l'élément avec la classe .navbar puis Ajoute la classe "bg-light" à l'élément
+    document.querySelector('.navbar').classList.add('bg-light');
+
+    document.querySelector('.navbar').classList.add('custom-nav');
+
+</script>
+@endsection

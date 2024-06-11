@@ -8,14 +8,25 @@ use Illuminate\Database\Eloquent\Model;
 class Article extends Model
 {
     use HasFactory;
-    // un article est plublier par un seul chercheur
+
+    protected $fillable = [
+        'id_ch', 'titre', 'description'
+    ];
+
     public function chercheur()
     {
-        return $this->belongsTo(Chercheur::class, 'id_ch', 'id_ch');
-        /*
-        Le deuxième paramètre ('id_ch') spécifie le nom de la colonne dans la table articles qui fait référence à la clé primaire de la table chercheurs
-        Le troisième paramètre ('id_ch') spécifie le nom de la colonne dans la table chercheurs qui sert de clé primaire
-        */
+        return $this->belongsTo(Chercheur::class, 'id_ch');
     }
 
+    // Définir la relation avec le modèle Document
+    public function documents()
+    {
+        return $this->hasMany(Document::class, 'num_art', 'id');
+    }
+
+    public function revues()
+    {
+        return $this->belongsToMany(Revue::class, 'contenir', 'num_art', 'num_rev');
+    }
 }
+

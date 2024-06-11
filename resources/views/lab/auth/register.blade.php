@@ -27,7 +27,8 @@
 
             <div class="form-group w-100">
                 <label for="email">E-mail</label>
-                <input type="email" class="form-control @error('email') is-invalid @enderror" id="email" value="{{old('email')}}" name="email" url-emailExist='{{route('app_exist_email')}}' token ={{'csrf_to()'}}   required>
+                <input type="email" class="form-control @error('email') is-invalid @enderror" id="email" value="{{old('email')}}" name="email"  required>
+                {{-- url-emailExist='{{route('app_exist_email')}}' token ={{'csrf_to()'}}  --}}
                 <small id="error-email" class="form-text text-danger"></small>
                 @error('email')
                     <div class="error"><small id="error-email" class="form-text text-danger"></small></div>
@@ -79,7 +80,7 @@
         {{-- style="background-color: #9b59b6; color: white; border:#9b59b6 !important; --}}
 
     </div>
-    
+
     <script>
         document.querySelector('.navbar').classList.add('bg-light');
     </script>

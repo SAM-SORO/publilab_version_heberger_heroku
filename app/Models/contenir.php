@@ -4,8 +4,13 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\Pivot;
 
-class contenir extends Model
+class Contenir extends Pivot
 {
-    use HasFactory;
+    protected $table = 'contenir';
+
+    protected $fillable = [
+        'num_art', 'num_rev', 'PageDebut', 'PageFin', 'DatePublication', 'Volume', 'Numero'
+    ];
 }

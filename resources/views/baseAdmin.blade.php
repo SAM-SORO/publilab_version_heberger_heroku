@@ -22,15 +22,15 @@
 			<div class="p-4">
 				<h1><a href="index.html" class="logo">Publi-lab</a></h1>
 				<ul class="list-unstyled components mb-5">
-					<li class="mb-3"><a href="{{route('article.chercheur')}}"><span class="fas fa-book mr-3"></span>Chercheur</a></li>
+					{{-- <li class="mb-3"><a href="{{route('article.chercheur')}}"><span class="fas fa-book mr-3"></span>Chercheur</a></li>
 					<li class="mb-3"><a href="{{route('publier')}}"><span class="fas fa-feather-alt mr-3"></span>Enregistrer chercheur</a></li>
 					<li class="mb-3"><a href="{{route('home')}}"><span class="fa-solid fa-house mr-3"></span>Page de visite</a></li>
 					<li class="mb-3"><a href="{{route('admin.profil')}}"><span class="fa-regular fa-user mr-3"></span> Profil</a></li>
                     <li class=" d-flex flex-column">
                         <a href="{{route('admin.profil') }}" class="ml-4"><img src="{{asset('img/WhatsApp Image 2024-02-26 à 19.58.41_cd0f47c4.jpg')}}" alt="Nom de l'utilisateur" class="rounded-circle img-fluid" width="35" height="50px">
-                        </a>
+                        </a> --}}
                         <p>Soro samuel - Admin</p>
-                    </li>
+                    {{-- </li> --}}
 				</ul>
                 <div>
                     <ul class="footer-sidebar d-flex flex-column">

@@ -11,9 +11,15 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('revues', function (Blueprint $table) {
+        Schema::create('documents', function (Blueprint $table) {
             $table->id();
+            $table->string('format')->nullable();
+            $table->string('lien')->nullable();
+            $table->string('image')->nullable();
+            $table->unsignedBigInteger('num_art');
             $table->timestamps();
+
+            $table->foreign('num_art')->references('id')->on('articles')->onDelete('cascade');
         });
     }
 
@@ -22,6 +28,7 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('revues');
+        Schema::dropIfExists('documents');
     }
 };
+

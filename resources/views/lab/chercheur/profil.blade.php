@@ -1,69 +1,137 @@
-
 @extends("baseChercheur")
 
 @section('content')
     <!-- Page Content  -->
-    <div class="p-4 p-md-5 pt-5">
+
+    <div class="container mt-4">
+        @if (Session::has('error'))
+            <div class="alert alert-danger" role="alert">
+                <span>{{ session('error') }}</span>
+            </div>
+        @endif
+
+        @if (Session::has('success'))
+            <div class="alert alert-success" role="alert">
+                <span>{{ Session::get('success') }}</span>
+            </div>
+        @endif
+    </div>
+
+    <div class="p-4 p-md-5">
         <h2 class="mb-5">PROFIL</h2>
         <div>
-            <div class="d-flex flex-column flex-sm-column flex-lg-row mb-2 mt-2">
-                <div class="col-lg-9">
-                    <form action="" method="POST">
+            <form action="{{ route('chercheur.modifier-profil', Auth::user()->id) }}" method="POST" id="profilForm">
+                @csrf
+                <div class="d-flex flex-column flex-sm-column flex-lg-row mb-2">
+                    <div class="col-lg-9">
                         <div class="form-group row mb-4">
                             <label for="inputNom" class="col-sm-2 col-form-label">Nom</label>
                             <div class="col-lg-10 col-sm-12">
-                                <input type="text" class="form-control" id="inputNom" name="nom">
+                                <input type="text" class="form-control" id="inputNom" name="nom" value="{{ Auth::user()->nom }}" disabled>
                             </div>
                         </div>
 
                         <div class="form-group row mb-4">
                             <label for="inputPrenom" class="col-sm-2 col-form-label">Prenom</label>
                             <div class="col-lg-10 col-sm-12">
-                                <input type="text" class="form-control" id="inputPrenom" name="">
+                                <input type="text" class="form-control" id="inputPrenom" name="prenom" value="{{ Auth::user()->prenom }}" disabled>
+                            </div>
+                        </div>
+
+                        <div class="form-group row mb-4">
+                            <label for="inputContact" class="col-sm-2 col-form-label">Contact</label>
+                            <div class="col-lg-10 col-sm-12">
+                                <input type="text" class="form-control" id="inputContact" name="contact" value="{{ Auth::user()->contact }}" disabled>
                             </div>
                         </div>
 
                         <div class="form-group row mb-4">
                             <label for="inputEmail" class="col-sm-2 col-form-label">E-mail</label>
                             <div class="col-lg-10 col-sm-12">
-                                <input type="email" class="form-control" id="inputEmail">
+                                <input type="email" class="form-control" id="inputEmail" name="email" value="{{ Auth::user()->email }}" disabled>
                             </div>
                         </div>
-                    </form>
-                </div>
-                <div class="d-flex flex-lg-column col-sm-4 col-lg-3 mb-sm-5 mb-5 mb-lg-0 flex-sm-row flex-md-row">
-                    <div class="btn btn-outline-danger mb-lg-2 py-2">Modifier</div>
-                    <div class="btn btn-outline-success ml-4 ml-lg-0 ml-sm-4">Appliquer</div>
-                </div>
-            </div>
-
-            <h5>Changer de mot de passe</h5>
-            <div class="">
-                <div class="col-12 mt-4">
-                    <div class="form-group row mb-4 mb-lg-5">
-                        <label for="inputPassword" class="col-6 col-md-8 col-sm-8 col-lg-3 col-form-label">Mot de passe actuel</label>
-                        <div class="col-12 col-sm-12 col-md-12 col-lg-6">
-                            <input type="password" class="form-control" id="inputPassword">
-                        </div>
                     </div>
-
-                    <div class="form-group row mb-4 mb-lg-5">
-                        <label for="inputPasswordNew" class="col-8 col-md-8 col-sm-8 col-lg-3  col-form-label">Nouveau mot de passe</label>
-                        <div class="col-12 col-sm-12 col-md-12 col-12 col-lg-6">
-                            <input type="password" class="form-control" id="inputPasswordNew">
-                        </div>
-                    </div>
-
-                    <div class="form-group row mb-4 mb-lg-5">
-                        <label for="inputPasswordConfirm" class="col-8 col-lg-3 col-form-label">Confirmer le mot de passe</label>
-                        <div class="col-12 col-sm-12 col-md-12 col-lg-6">
-                            <input type="password" class="form-control" id="inputPasswordConfirm">
-                        </div>
+                    <div class="d-flex flex-lg-column col-sm-4 col-lg-3 mb-sm-5 mb-5 mb-lg-0 flex-sm-row flex-md-row">
+                        <button class="btn btn-outline-danger" id="modifierBtn">Modifier</button>
+                        <button class="btn btn-outline-secondary mt-4" id="annulerBtn" style="display: none;">Annuler</button>
                     </div>
                 </div>
-                <div class="btn btn-outline-success ml">Appliquer le changement</div>
-            </div>
+
+                <h5>Changer de mot de passe</h5>
+                <div>
+                    <div class="col-12 mt-4">
+                        <div class="form-group row mb-4 mb-lg-5">
+                            <label for="inputPassword" class="col-6 col-md-8 col-sm-8 col-lg-3 col-form-label">Mot de passe actuel</label>
+                            <div class="col-12 col-sm-12 col-md-12 col-lg-6">
+                                <input type="password" class="form-control" id="inputPassword" name="current_password" form="profilForm" disabled>
+                            </div>
+                        </div>
+
+                        <div class="form-group row mb-4 mb-lg-5">
+                            <label for="inputPasswordNew" class="col-8 col-md-8 col-sm-8 col-lg-3  col-form-label">Nouveau mot de passe</label>
+                            <div class="col-12 col-sm-12 col-md-12 col-12 col-lg-6">
+                                <input type="password" class="form-control" id="inputPasswordNew" name="new_password" form="profilForm" disabled>
+                            </div>
+                        </div>
+
+                        <div class="form-group row mb-4 mb-lg-5">
+                            <label for="inputPasswordConfirm" class="col-8 col-lg-3 col-form-label">Confirmer le mot de passe</label>
+                            <div class="col-12 col-sm-12 col-md-12 col-lg-6">
+                                <input type="password" class="form-control" id="inputPasswordConfirm" name="confirm_password" form="profilForm" disabled>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </form>
         </div>
     </div>
 
+
+
+
+    <script>
+        document.getElementById('modifierBtn').addEventListener('click', function(event) {
+            event.preventDefault();
+            if (this.innerText === 'Modifier') {
+                this.innerText = 'Appliquer';
+                document.getElementById('annulerBtn').style.display = 'block';
+                toggleFields(false);
+            } else {
+                document.getElementById('profilForm').submit();
+            }
+        });
+
+        document.getElementById('annulerBtn').addEventListener('click', function(event) {
+            event.preventDefault();
+            document.getElementById('modifierBtn').innerText = 'Modifier';
+            this.style.display = 'none';
+            toggleFields(true);
+            resetForm();
+        });
+
+        function toggleFields(disabled) {
+            document.querySelectorAll('#profilForm input').forEach(function(input) {
+                input.disabled = disabled;
+            });
+        }
+
+        function resetForm() {
+            var form = document.getElementById('profilForm');
+            form.reset();
+            Array.from(form.elements).forEach(function(element) {
+                if (element.name && element.value !== undefined && element.name in initialValues) {
+                    element.value = initialValues[element.name];
+                }
+            });
+        }
+
+        const initialValues = {
+            nom: "{{ Auth::user()->nom }}",
+            prenom: "{{ Auth::user()->prenom }}",
+            contact: "{{ Auth::user()->contact }}",
+            email: "{{ Auth::user()->email }}"
+        };
+    </script>
 @endsection
+

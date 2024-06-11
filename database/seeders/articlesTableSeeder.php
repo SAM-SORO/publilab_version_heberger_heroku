@@ -11,25 +11,20 @@ class articlesTableSeeder extends Seeder
     /**
      * Run the database seeds.
      */
-    public function run(): void
+    public function run()
     {
-        //
-        $article = new article();
-        $article->id_ch = 1;
-        $article->titre_art = "Les methodes d'analyse PU/UML et MERISE";
-        $article->desc_art = "soro samuel cdnsqlckd";
-        $article->save();
+
 
         $article = new article();
         $article->id_ch = 2;
-        $article->titre_art = "Cyber securité";
-        $article->desc_art = "silue caleb dqndksjq";
+        $article->titre = "Cyber securité";
+        $article->description = "silue caleb dqndksjq";
         $article->save();
 
         $article = new article();
         $article->id_ch = 1;
-        $article->titre_art = "parlon D'IA";
-        $article->desc_art = " j,iok";
+        $article->titre = "parlon D'IA";
+        $article->description = " jiok";
         $article->save();
     }
 }

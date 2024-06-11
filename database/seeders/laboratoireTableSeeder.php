@@ -15,28 +15,28 @@ class laboratoireTableSeeder extends Seeder
     {
 
         $laboratoire = new laboratoire();
-        $laboratoire->nom_labo = "Chimaster";
-        $laboratoire->desc_labo = "laboratoire de recherche de l'INPHB";
-        $laboratoire->adr_labo = "274 INPHB-CENTRE";
+        $laboratoire->nom = "Chimaster";
+        $laboratoire->description = "laboratoire de recherche de l'INPHB";
+        $laboratoire->adresse = "274 INPHB-CENTRE";
         $laboratoire->save();
 
         $laboratoire = new laboratoire();
-        $laboratoire->nom_labo = "Centronik";
-        $laboratoire->desc_labo = "laboratoire électronique de l'INPHB";
-        $laboratoire->adr_labo = "245 INPHB-CENTRE";
+        $laboratoire->nom = "Centronik";
+        $laboratoire->description = "laboratoire électronique de l'INPHB";
+        $laboratoire->adresse = "245 INPHB-CENTRE";
         $laboratoire->save();
 
         $laboratoire = new laboratoire();
-        $laboratoire->nom_labo = "INFO-lab";
-        $laboratoire->desc_labo = "laboratoire informatique de l'INPHB";
-        $laboratoire->adr_labo = "332 INPHB-CENTRE";
+        $laboratoire->nom = "INFO-lab";
+        $laboratoire->description = "laboratoire informatique de l'INPHB";
+        $laboratoire->adresse = "332 INPHB-CENTRE";
 
         $laboratoire->save();
 
         $laboratoire = new laboratoire();
-        $laboratoire->nom_labo = "Y'ELLO-LAB";
-        $laboratoire->desc_labo = "laboratoire de fabrication numerique de l'INPHB";
-        $laboratoire->adr_labo = "223 INPHB-CENTRE";
+        $laboratoire->nom = "Y'ELLO-LAB";
+        $laboratoire->description = "laboratoire de fabrication numerique de l'INPHB";
+        $laboratoire->adresse = "223 INPHB-CENTRE";
         $laboratoire->save();
 
     }

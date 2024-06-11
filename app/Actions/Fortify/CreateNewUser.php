@@ -19,19 +19,18 @@ class CreateNewUser implements CreatesNewUsers
      */
     public function create(array $input): User
     {
-        /*
+
         //j'ai gerer la verification du formulaire avec java script donc on en aurra pas besoin
-        Validator::make($input, [
-            'name' => ['required', 'string', 'max:255'],
-            'email' => [
-                'required',
-                'string',
-                'email',
-                'max:255',
-                Rule::unique(User::class),
-            ],
-            'password' => $this->passwordRules(),
-        ])->validate();*/
+        // Validator::make($input, [
+        //     'name' => ['required', 'string', 'max:255'],
+        //     'email' => [
+        //         'required',
+        //         'string',
+        //         'email',
+        //         'max:255',
+        //         Rule::unique(User::class),
+        //     ],
+        // ])->validate();
 
         // dans la table user qui a ete generer il n  y'a pas le nom et le prenom. donc on va utiliser ce fichier pour l'inscription des erreures
 

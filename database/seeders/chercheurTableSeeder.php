@@ -2,35 +2,36 @@
 
 namespace Database\Seeders;
 
-
+use App\Models\Chercheur;
 use App\Models\chercheurs;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Hash;
 
 class chercheurTableSeeder extends Seeder
 {
     /**
      * Run the database seeds.
      */
-    public function run(): void
+    public function run()
     {
         //
-        $chercheur = new chercheurs();
+        $chercheur = new Chercheur();
         $chercheur->id_labo = 1;
-        $chercheur->nom_ch = "anon";
-        $chercheur->prenom_ch = "joseph";
-        $chercheur->email_ch = "anon.joseph@inphb.ci";
-        $chercheur->contact_ch = "0701020304";
-        $chercheur->password_ch = "anonjoseph";
+        $chercheur->nom = "anon";
+        $chercheur->prenom = "joseph";
+        $chercheur->email = "anon.joseph@inphb.ci";
+        $chercheur->contact = "0701020304";
+        $chercheur->password = Hash::make("123456789");
         $chercheur->save();
 
-        $chercheur = new chercheurs();
-        $chercheur->id_labo = 1;
-        $chercheur->nom_ch = "soro";
-        $chercheur->prenom_ch = "samuel";
-        $chercheur->email_ch = "samuel.soro@inphb.ci";
-        $chercheur->contact_ch = "0102030405";
-        $chercheur->password_ch = "sorosamuel";
+        $chercheur = new chercheur();
+        $chercheur->id_labo = 2;
+        $chercheur->nom = "soro";
+        $chercheur->prenom = "samuel";
+        $chercheur->email = "samuel.soro@inphb.ci";
+        $chercheur->contact = "0546829308";
+        $chercheur->password = Hash::make("123456789");
         $chercheur->save();
 
     }

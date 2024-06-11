@@ -12,10 +12,10 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('laboratoires', function (Blueprint $table) {
-            $table->id('id_labo');
-            $table->string('nom_labo');
-            $table->string('desc_labo');
-            $table->string('adr_labo');
+            $table->id();
+            $table->string('nom');
+            $table->text('description');
+            $table->string('adresse');
             $table->timestamps();
         });
     }

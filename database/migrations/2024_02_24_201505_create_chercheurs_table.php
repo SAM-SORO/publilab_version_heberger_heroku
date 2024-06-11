@@ -12,13 +12,15 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('chercheurs', function (Blueprint $table) {
-            $table->id('id_ch');
-            $table->integer('id_labo');
-            $table->string("nom_ch");
-            $table->string("prenom_ch");
-            $table->string("email_ch")->unique();
-            $table->string("contact_ch");
-            $table->string("password_ch");
+            $table->id();
+            $table->unsignedBigInteger('id_labo');
+            $table->foreign('id_labo')->references('id')->on('laboratoires')->onDelete('cascade');
+            $table->string("nom");
+            $table->string("prenom");
+            $table->string("email")->unique();
+            $table->string("contact");
+            $table->string('photo')->nullable();
+            $table->string("password");
             $table->rememberToken();
             $table->timestamps();
         });

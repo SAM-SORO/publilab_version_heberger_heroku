@@ -32,6 +32,7 @@ La méthode toggle de classList permet de basculer la présence d'une classe sp�
 
 /*/
 
+//ici nous gerons l'action de masquage du mot de passe saisi
 window.addEventListener("load", function() {
     const togglePassword1 = document.querySelector('#toggle-password1');
     const password = document.querySelector('#password');
@@ -136,6 +137,7 @@ $('#submit-enregistrer-chercheur').click(function(event) {
 
 $('#submit-inscription').click(function(event) {
     event.preventDefault();
+
 
     var username = $('#username').val();
     var email = $('#email').val();
@@ -248,6 +250,6 @@ $('#submit-connexion').click(function(event) {
 
 
 function emailExist(){
-    var urlEmail = $('email').attr('ElevatedButton')
+    var urlEmail = $('email').attr('url-emailExist')
 }
 

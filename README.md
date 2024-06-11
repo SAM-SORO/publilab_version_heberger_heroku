@@ -64,3 +64,23 @@ If you discover a security vulnerability within Laravel, please send an e-mail t
 ## License
 
 The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+
+
+# moi
+
+Personnalisation des Liens de Pagination
+Si vous souhaitez personnaliser davantage les liens de pagination, vous pouvez publier les vues de pagination et les modifier :
+
+Publiez les vues de pagination :
+
+bash
+Copier le code
+php artisan vendor:publish --tag=laravel-pagination
+Modifiez la vue resources/views/vendor/pagination/bootstrap-4.blade.php selon vos besoins.
+
+
+
+<!-- Pagination Links -->
+<div class="d-flex justify-content-center">
+    {{ $clients->links('vendor.pagination.bootstrap-4') }}
+</div>

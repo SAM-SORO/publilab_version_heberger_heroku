@@ -12,7 +12,7 @@
 <a class="nav-link font-weight-bold active" href="#">Authentification</a>
 @endsection
 
-
+{{Auth::guard('admin')->user()->nom}}
 
 @section ('contenue-main')
     <div class="container-fluid bg-light d-flex align-items-center justify-content-center mt-1 sign-height">

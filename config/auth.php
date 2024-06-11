@@ -1,5 +1,6 @@
 <?php
 
+
 return [
 
     /*
@@ -36,11 +37,28 @@ return [
     */
 
     'guards' => [
+
         'web' => [
             'driver' => 'session',
             'provider' => 'users',
         ],
+
+        'visiteur' => [
+            'driver' => 'session',
+            'provider' => 'visiteurs',
+        ],
+
+        'admin' => [
+            'driver' => 'session',
+            'provider' => 'admins',
+        ],
+
+        'chercheur' => [
+            'driver' => 'session',
+            'provider' => 'chercheurs',
+        ],
     ],
+
 
     /*
     |--------------------------------------------------------------------------
@@ -60,9 +78,26 @@ return [
     */
 
     'providers' => [
+
         'users' => [
             'driver' => 'eloquent',
             'model' => App\Models\User::class,
+        ],
+
+        'admins' => [
+            'driver' => 'eloquent',
+            'model' => App\Models\User::class,
+        ],
+
+
+        'visiteurs' => [
+            'driver' => 'eloquent',
+            'model' => App\Models\Visiteur::class,
+        ],
+
+        'chercheurs' => [
+            'driver' => 'eloquent',
+            'model' => App\Models\Chercheur::class,
         ],
 
         // 'users' => [
@@ -90,13 +125,31 @@ return [
     |
     */
 
-    'passwords' => [
-        'users' => [
-            'provider' => 'users',
-            'table' => 'password_reset_tokens',
-            'expire' => 60,
-            'throttle' => 60,
-        ],
+    // 'passwords' => [
+    //     'users' => [
+    //         'provider' => 'users',
+    //         'table' => 'password_reset_tokens',
+    //         'expire' => 60,
+    //         'throttle' => 60,
+    //     ],
+    // ],
+
+    'visiteurs' => [
+        'provider' => 'visiteurs',
+        'table' => 'password_reset_tokens',
+        'expire' => 60,
+    ],
+
+    'chercheurs' => [
+        'provider' => 'chercheurs',
+        'table' => 'password_reset_tokens',
+        'expire' => 60,
+    ],
+
+    'admins' => [
+        'provider' => 'admins',
+        'table' => 'password_reset_tokens',
+        'expire' => 60,
     ],
 
     /*
@@ -113,3 +166,5 @@ return [
     'password_timeout' => 10800,
 
 ];
+
+

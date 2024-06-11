@@ -6,8 +6,20 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <link href="https://fonts.googleapis.com/css?family=Poppins:300,400,500,600,700,800,900" rel="stylesheet">
-<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css">
+{{-- <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css"> --}}
 <link rel="stylesheet" href="{{asset('assets/app.css')}}">
+
+<style>
+    .custom-link {
+            text-decoration: none;
+            color: inherit; /* Keeps the original color */
+        }
+
+    .custom-link:hover {
+        text-decoration: underline;
+        color: inherit; /* Ensures color does not change on hover */
+    }
+</style>
 </head>
 <body>
 
@@ -20,18 +32,18 @@
 					</button>
 			</div>
 			<div class="p-4">
-				<h1><a href="index.html" class="logo">Publi-lab</a></h1>
+				<h1><a href="{{route('home')}}" class="logo">Publi-lab</a></h1>
                 <div class="mt-4">
                     <div>
                         <ul class="list-unstyled components mb-5">
-                            <li class="mb-3"><a href="{{route('article.chercheur')}}"><span class="fas fa-book mr-3"></span>Mes articles</a></li>
-                            <li class="mb-3"><a href="{{route('publier')}}"><span class="fas fa-feather-alt mr-3"></span>Publier un article</a></li>
+                            <li class="mb-3"><a href="{{route('chercheur.espace')}}"><span class="fas fa-book mr-3"></span>Mes articles</a></li>
+                            <li class="mb-3"><a href="{{route('chercheur.publierArticle')}}"><span class="fas fa-feather-alt mr-3"></span>Publier un article</a></li>
                             <li class="mb-3"><a href="{{route('home')}}"><span class="fa-solid fa-house mr-3"></span>Page de visite</a></li>
                             <li class="mb-3"><a href="{{route('chercheur.profil')}}"><span class="fa-regular fa-user mr-3"></span> Profil</a></li>
                             <li class=" d-flex flex-column">
                                 <a href="{{route('chercheur.profil') }}" class="ml-4"><img src="{{asset('img/WhatsApp Image 2024-02-26 à 19.58.41_cd0f47c4.jpg')}}" alt="Nom de l'utilisateur" class="rounded-circle img-fluid" width="35" height="50px">
                                 </a>
-                                <p>Soro samuel-chercheur</p>
+                                <p>{{Auth::guard('chercheur')->user()->nom}}-chercheur</p>
                             </li>
                         </ul>
                     </div>
@@ -46,7 +58,7 @@
                             </li>
 
                             <li class="">
-                                <a href="#">
+                                <a href="{{route('logout')}}">
                                     <span class="fas fa-sign-out-alt"></span>
                                     <span class="logout-label ml-2">Se déconnecter</span>
                                 </a>
