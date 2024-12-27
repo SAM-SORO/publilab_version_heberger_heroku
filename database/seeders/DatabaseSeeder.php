@@ -22,10 +22,20 @@ class DatabaseSeeder extends Seeder
         // ]);
 
         $this->call([
+            AdminTableSeeder::class,
             VisiteurTableSeeder::class,
+            EdpTableSeeder::class,
+            UmriTableSeeder::class,
             laboratoireTableSeeder::class,
             chercheurTableSeeder::class,
-            articlesTableSeeder::class,
+            ArticleTableSeeder::class,
+            ChercheurArticleSeeder::class,
+            RevueSeeder::class,
+            BdIndexationRevueSeeder::class,
         ]);
     }
 }
+
+//ce dossier est creer afin d'executer nos seeder simplement avec la commande php artisan db:seed
+
+// pour ne pas avoir a faire php artisan db:seed --class = seederName pour executer un a un

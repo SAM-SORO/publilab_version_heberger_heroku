@@ -2,29 +2,58 @@
 
 {{-- titre de la page --}}
 @section('title', 'Publilab')
-
+@section('bg-color', 'bg-light')
 
 
 @section('contenue-main')
 
-<!-- Conteneur principal avec une marge supérieure -->
-<div class="container" style="margin-top: 60px">
-    <!-- Section de présentation avec Bootstrap Jumbotron -->
-    <div class=" shadow bg-white rounded text-center py-4">
-        <!-- Titre principal de la page -->
-          <!-- Image -->
-        <h1 class="display-4"><strong>Bienvenue sur <span class="text-success">Publi</span><span class="text-dark">lab</span></strong></h1>
-        <img src="{{asset('img/R.jpg')}}" class="img-fluid w-55" alt="Image de présentation">
-        <!-- Description de la page -->
-        <p class="lead mt-4">Découvrez notre plateforme de gestion de publications, votre alliée pour une diffusion efficace des travaux de recherche et une collaboration fructueuse au sein de notre laboratoire.</p>
-        <hr class="my-4">
-        <!-- Texte supplémentaire -->
-        <p>Visitez, Explorez, Télèchargez, les articles Publiés par nos chercheurs.</p>
-        <!-- Bouton d'action -->
-        <button class="btn btn-primary btn-lg" href="{{route('visiteur.article')}}" role="button">Voir Les Publication</button>
+
+<!-- Main landing page content -->
+<section class="mt-5 mb-5">
+    <div class="container custom-height mt-md-5 d-flex flex-column flex-md-row align-items-center">
+        <!-- Texte à gauche -->
+        <div class="text-section w-100 w-md-50 pr-md-5 mb-4 mb-md-0 mt-md-5">
+            <h1 class="landing-header">PubliLab : Consulter, Publier et télécharger des articles</h1>
+
+            <p class="landing-description">
+                Publilab est une plateforme centralisée de l'INPHB dédiée à la publication d'articles de recherche des différents laboratoires ...
+            </p>
+
+            <!-- Bouton "Voir Les Publications" -->
+            <a href="{{ route('visiteur.article') }}" class="btn btn-primary mt-3 text-center">Voir Les Publications</a>
+        </div>
+
+        <!-- Image à droite -->
+        <div class="image-section w-100 w-md-50 text-center mb-md-0">
+            <img src="{{ asset('assets/img/R.jpg') }}" alt="Image description" class="img-fluid animated-image">
+        </div>
     </div>
 
-</div>
+</section>
+
+<div style="margin-bottom: 130px;"></div>
+
+<section class="container-fluid mt-5 mb-5 bg-white">
+    <div class="container">
+        <h3 class="row justify-content-center pt-5 pb-5">Articles publiés récemment</h3>
+        <div class="row justify-content-center">
+            @foreach($articles as $article)
+                <div class="col-md-6 mb-4 d-flex justify-content-center">
+                    <div class="card bg-white" style="width: 600px; height: 400px;">
+                        <div class="card-body d-flex flex-column">
+                            <h5 class="card-title">{{ $article->titreArticle }}</h5>
+                            <p class="card-text">{{ Str::limit($article->resumeArticle, 50) }}</p>
+                            <a href="{{ route('visiteur.article', $article->idArticle) }}" class="btn btn-primary mt-auto">Lire la suite</a>
+                            {{-- {{ route('visiteur.article.show', $article->idArticle) }} --}}
+                        </div>
+                    </div>
+                </div>
+            @endforeach
+        </div>
+    </div>
+</section>
+
+
 
 <script>
 

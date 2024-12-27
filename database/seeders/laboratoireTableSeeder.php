@@ -14,29 +14,16 @@ class laboratoireTableSeeder extends Seeder
     public function run(): void
     {
 
-        $laboratoire = new laboratoire();
-        $laboratoire->nom = "Chimaster";
-        $laboratoire->description = "laboratoire de recherche de l'INPHB";
-        $laboratoire->adresse = "274 INPHB-CENTRE";
-        $laboratoire->save();
-
-        $laboratoire = new laboratoire();
-        $laboratoire->nom = "Centronik";
-        $laboratoire->description = "laboratoire électronique de l'INPHB";
-        $laboratoire->adresse = "245 INPHB-CENTRE";
-        $laboratoire->save();
-
-        $laboratoire = new laboratoire();
-        $laboratoire->nom = "INFO-lab";
-        $laboratoire->description = "laboratoire informatique de l'INPHB";
-        $laboratoire->adresse = "332 INPHB-CENTRE";
-
-        $laboratoire->save();
-
-        $laboratoire = new laboratoire();
-        $laboratoire->nom = "Y'ELLO-LAB";
-        $laboratoire->description = "laboratoire de fabrication numerique de l'INPHB";
-        $laboratoire->adresse = "223 INPHB-CENTRE";
+        $laboratoire = new Laboratoire(); // Notez la capitalisation pour le modèle
+        $laboratoire->nomLabo = "INFO-lab"; // Utilisez le bon nom de champ
+        $laboratoire->anneeCreation = "2020"; // Exemple de valeur, ajustez si nécessaire
+        $laboratoire->localisationLabo = "Abidjan"; // Exemple de valeur, ajustez si nécessaire
+        $laboratoire->adresseLabo = "332 INPHB-CENTRE"; // Utilisez le bon nom de champ
+        $laboratoire->telLabo = "0123456789"; // Exemple de numéro de téléphone
+        $laboratoire->faxLabo = "0123456789"; // Exemple de numéro de fax
+        $laboratoire->emailLabo = "info-lab@inphb.ci"; // Exemple d'email
+        $laboratoire->descLabo = "Laboratoire informatique de l'INPHB"; // Utilisez le bon nom de champ
+        $laboratoire->idUMRI = 1; // Assurez-vous que l'idUMRI existe dans la table umris
         $laboratoire->save();
 
     }

@@ -3,36 +3,40 @@
 namespace Database\Seeders;
 
 use App\Models\Chercheur;
-use App\Models\chercheurs;
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
 
-class chercheurTableSeeder extends Seeder
+class ChercheurTableSeeder extends Seeder
 {
     /**
      * Run the database seeds.
      */
     public function run()
     {
-        //
         $chercheur = new Chercheur();
-        $chercheur->id_labo = 1;
-        $chercheur->nom = "anon";
-        $chercheur->prenom = "joseph";
-        $chercheur->email = "anon.joseph@inphb.ci";
-        $chercheur->contact = "0701020304";
+        $chercheur->nomCherch = "soro";
+        $chercheur->prenomCherch = "samuel";
+        $chercheur->adresse = "123 INPHB-CENTRE"; // Champ nullable
+        $chercheur->telCherch = "0546829308"; // Champ nullable
+        $chercheur->emailCherch = "samuel.soro@inphb.ci";
         $chercheur->password = Hash::make("123456789");
+        $chercheur->specialite = "Biologie"; // Champ nullable
+        $chercheur->idLabo = 1; // Assurez-vous que l'idLabo existe dans la table laboratoires
+        $chercheur->dateArrivee = now()->toDateString(); // Champ nullable, exemple de date d'arrivée
         $chercheur->save();
 
-        $chercheur = new chercheur();
-        $chercheur->id_labo = 2;
-        $chercheur->nom = "soro";
-        $chercheur->prenom = "samuel";
-        $chercheur->email = "samuel.soro@inphb.ci";
-        $chercheur->contact = "0546829308";
-        $chercheur->password = Hash::make("123456789");
-        $chercheur->save();
 
+
+        $chercheur = new Chercheur();
+        $chercheur->nomCherch = "sam";
+        $chercheur->prenomCherch = "samuel";
+        $chercheur->adresse = "123 INPHB-CENTRE"; // Champ nullable
+        $chercheur->telCherch = "0565320650"; // Champ nullable
+        $chercheur->emailCherch = "samsoro@inphb.ci";
+        $chercheur->password = Hash::make("12345678");
+        $chercheur->specialite = "Math"; // Champ nullable
+        $chercheur->idLabo = 1; // Assurez-vous que l'idLabo existe dans la table laboratoires
+        $chercheur->dateArrivee = now()->toDateString(); // Champ nullable, exemple de date d'arrivée
+        $chercheur->save();
     }
 }

@@ -1,12 +1,11 @@
 @extends("baseChercheur")
 
 @section('content')
-    <!-- Page Content  -->
-
     <div class="container mt-4">
+        <!-- Notifications d'erreur ou de succès -->
         @if (Session::has('error'))
             <div class="alert alert-danger" role="alert">
-                <span>{{ session('error') }}</span>
+                <span>{{ Session::get('error') }}</span>
             </div>
         @endif
 
@@ -15,80 +14,91 @@
                 <span>{{ Session::get('success') }}</span>
             </div>
         @endif
-    </div>
 
-    <div class="p-4 p-md-5">
-        <h2 class="mb-5">PROFIL</h2>
-        <div>
-            <form action="{{ route('chercheur.modifier-profil', Auth::user()->id) }}" method="POST" id="profilForm">
+        <div class="p-4 p-md-5">
+            <h2 class="mb-5">Modifier mon profil</h2>
+            <form action="{{ route('chercheur.modifierProfil') }}" method="POST">
                 @csrf
-                <div class="d-flex flex-column flex-sm-column flex-lg-row mb-2">
-                    <div class="col-lg-9">
-                        <div class="form-group row mb-4">
-                            <label for="inputNom" class="col-sm-2 col-form-label">Nom</label>
-                            <div class="col-lg-10 col-sm-12">
-                                <input type="text" class="form-control" id="inputNom" name="nom" value="{{ Auth::user()->nom }}" disabled>
-                            </div>
-                        </div>
 
-                        <div class="form-group row mb-4">
-                            <label for="inputPrenom" class="col-sm-2 col-form-label">Prenom</label>
-                            <div class="col-lg-10 col-sm-12">
-                                <input type="text" class="form-control" id="inputPrenom" name="prenom" value="{{ Auth::user()->prenom }}" disabled>
-                            </div>
-                        </div>
-
-                        <div class="form-group row mb-4">
-                            <label for="inputContact" class="col-sm-2 col-form-label">Contact</label>
-                            <div class="col-lg-10 col-sm-12">
-                                <input type="text" class="form-control" id="inputContact" name="contact" value="{{ Auth::user()->contact }}" disabled>
-                            </div>
-                        </div>
-
-                        <div class="form-group row mb-4">
-                            <label for="inputEmail" class="col-sm-2 col-form-label">E-mail</label>
-                            <div class="col-lg-10 col-sm-12">
-                                <input type="email" class="form-control" id="inputEmail" name="email" value="{{ Auth::user()->email }}" disabled>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="d-flex flex-lg-column col-sm-4 col-lg-3 mb-sm-5 mb-5 mb-lg-0 flex-sm-row flex-md-row">
-                        <button class="btn btn-outline-danger" id="modifierBtn">Modifier</button>
-                        <button class="btn btn-outline-secondary mt-4" id="annulerBtn" style="display: none;">Annuler</button>
-                    </div>
+                <!-- Nom -->
+                <div class="form-group">
+                    <label for="nomCherch">Nom</label>
+                    <input type="text" name="nomCherch" id="nomCherch" class="form-control"
+                        value="{{ old('nomCherch', Auth::user()->nomCherch) }}" required>
+                    @error('nomCherch')
+                        <span class="text-danger">{{ $message }}</span>
+                    @enderror
                 </div>
 
-                <h5>Changer de mot de passe</h5>
-                <div>
-                    <div class="col-12 mt-4">
-                        <div class="form-group row mb-4 mb-lg-5">
-                            <label for="inputPassword" class="col-6 col-md-8 col-sm-8 col-lg-3 col-form-label">Mot de passe actuel</label>
-                            <div class="col-12 col-sm-12 col-md-12 col-lg-6">
-                                <input type="password" class="form-control" id="inputPassword" name="current_password" form="profilForm" disabled>
-                            </div>
-                        </div>
-
-                        <div class="form-group row mb-4 mb-lg-5">
-                            <label for="inputPasswordNew" class="col-8 col-md-8 col-sm-8 col-lg-3  col-form-label">Nouveau mot de passe</label>
-                            <div class="col-12 col-sm-12 col-md-12 col-12 col-lg-6">
-                                <input type="password" class="form-control" id="inputPasswordNew" name="new_password" form="profilForm" disabled>
-                            </div>
-                        </div>
-
-                        <div class="form-group row mb-4 mb-lg-5">
-                            <label for="inputPasswordConfirm" class="col-8 col-lg-3 col-form-label">Confirmer le mot de passe</label>
-                            <div class="col-12 col-sm-12 col-md-12 col-lg-6">
-                                <input type="password" class="form-control" id="inputPasswordConfirm" name="confirm_password" form="profilForm" disabled>
-                            </div>
-                        </div>
-                    </div>
+                <!-- Prénom -->
+                <div class="form-group">
+                    <label for="prenomCherch">Prénom</label>
+                    <input type="text" name="prenomCherch" id="prenomCherch" class="form-control"
+                        value="{{ old('prenomCherch', Auth::user()->prenomCherch) }}" required>
+                    @error('prenomCherch')
+                        <span class="text-danger">{{ $message }}</span>
+                    @enderror
                 </div>
+
+                <!-- Adresse -->
+                <div class="form-group">
+                    <label for="adresse">Adresse</label>
+                    <input type="text" name="adresse" id="adresse" class="form-control"
+                        value="{{ old('adresse', Auth::user()->adresse) }}">
+                    @error('adresse')
+                        <span class="text-danger">{{ $message }}</span>
+                    @enderror
+                </div>
+
+                <!-- Contact -->
+                <div class="form-group">
+                    <label for="telCherch">Contact</label>
+                    <input type="text" name="telCherch" id="telCherch" class="form-control"
+                        value="{{ old('telCherch', Auth::user()->telCherch) }}" required>
+                    @error('telCherch')
+                        <span class="text-danger">{{ $message }}</span>
+                    @enderror
+                </div>
+
+                <!-- Email -->
+                <div class="form-group">
+                    <label for="emailCherch">Email</label>
+                    <input type="email" name="emailCherch" id="emailCherch" class="form-control"
+                        value="{{ old('emailCherch', Auth::user()->emailCherch) }}" required>
+                    @error('emailCherch')
+                        <span class="text-danger">{{ $message }}</span>
+                    @enderror
+                </div>
+
+                <!-- Mot de passe actuel -->
+                <div class="form-group">
+                    <label for="current_password">Mot de passe actuel</label>
+                    <input type="password" name="current_password" id="current_password" class="form-control">
+                    @error('current_password')
+                        <span class="text-danger">{{ $message }}</span>
+                    @enderror
+                </div>
+
+                <!-- Nouveau mot de passe -->
+                <div class="form-group">
+                    <label for="new_password">Nouveau mot de passe</label>
+                    <input type="password" name="new_password" id="new_password" class="form-control">
+                    @error('new_password')
+                        <span class="text-danger">{{ $message }}</span>
+                    @enderror
+                </div>
+
+                <!-- Confirmation du nouveau mot de passe -->
+                <div class="form-group">
+                    <label for="new_password_confirmation">Confirmer le nouveau mot de passe</label>
+                    <input type="password" name="new_password_confirmation" id="new_password_confirmation" class="form-control">
+                </div>
+
+                <!-- Bouton de soumission -->
+                <button type="submit" class="btn btn-primary mt-3">Mettre à jour</button>
             </form>
         </div>
     </div>
-
-
-
 
     <script>
         document.getElementById('modifierBtn').addEventListener('click', function(event) {
@@ -127,8 +137,8 @@
         }
 
         const initialValues = {
-            nom: "{{ Auth::user()->nom }}",
-            prenom: "{{ Auth::user()->prenom }}",
+            nom: "{{ Auth::user()->nomCherch }}",
+            prenom: "{{ Auth::user()->prenomCherch }}",
             contact: "{{ Auth::user()->contact }}",
             email: "{{ Auth::user()->email }}"
         };

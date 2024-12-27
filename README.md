@@ -21,51 +21,6 @@ Laravel is a web application framework with expressive, elegant syntax. We belie
 
 Laravel is accessible, powerful, and provides tools required for large, robust applications.
 
-## Learning Laravel
-
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
-
-You may also try the [Laravel Bootcamp](https://bootcamp.laravel.com), where you will be guided through building a modern Laravel application from scratch.
-
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains over 2000 video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
-
-## Laravel Sponsors
-
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
-
-### Premium Partners
-
-- **[Vehikl](https://vehikl.com/)**
-- **[Tighten Co.](https://tighten.co)**
-- **[WebReinvent](https://webreinvent.com/)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel/)**
-- **[Cyber-Duck](https://cyber-duck.co.uk)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Jump24](https://jump24.co.uk)**
-- **[Redberry](https://redberry.international/laravel/)**
-- **[Active Logic](https://activelogic.com)**
-- **[byte5](https://byte5.de)**
-- **[OP.GG](https://op.gg)**
-
-## Contributing
-
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
-
-## Code of Conduct
-
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
-
-## Security Vulnerabilities
-
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
-
-## License
-
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
-
-
 # moi
 
 Personnalisation des Liens de Pagination
@@ -84,3 +39,122 @@ Modifiez la vue resources/views/vendor/pagination/bootstrap-4.blade.php selon vo
 <div class="d-flex justify-content-center">
     {{ $clients->links('vendor.pagination.bootstrap-4') }}
 </div>
+
+
+## creation des models et de leur controllleurs
+
+php artisan make:model BDIndexation -m
+php artisan make:model Grade -m
+php artisan make:model Chercheur -m
+php artisan make:model Laboratoire -m
+php artisan make:model Doctorant -m
+php artisan make:model Revue -m
+php artisan make:model Article -m
+php artisan make:model Theme -m
+php artisan make:model AxeRecherche -m
+php artisan make:model UMRI -m
+php artisan make:model EDP -m
+
+
+php artisan make:model ChercheurGrade -m
+php artisan make:model ChercheurArticle -m
+php artisan make:model LaboratoireAxeRecherche -m
+php artisan make:model DoctorantChercheur -m
+php artisan make:model DoctorantArticleChercheur -m
+php artisan make:model BDIndexationRevue -m
+php artisan make:model ArticleRevue -m
+
+
+
+## //
+php artisan make:migration update_themes_table
+
+// php artisan 
+make:migration update_doctorants_table --table=doctorants
+
+// php artisan make:migration add_datefin_to_doctorant_chercheur --table=doctorant_chercheur
+
+## Pour mettre en place la suppression d'un article en utilisant SweetAlert et un bouton moda
+Avec un gestionnaire de paquets (npm ou yarn)
+
+npm install sweetalert2
+
+## 2. Configuration de SweetAlert dans Laravel
+Si vous utilisez un gestionnaire de paquets (npm), importez SweetAlert2 dans vos fichiers JavaScript.
+
+import Swal from 'sweetalert2';
+window.Swal = Swal;
+
+
+## faire npm install
+
+
+## afin d'utiliser mix pour la compilation faire 
+
+npm install laravel-mix --save-dev
+
+##
+créer un fichier webpack.mix.js Dans le répertoire racine pour gérer la compilation de vos fichiers JavaScript, y compris l'utilisation de import dans des modules
+
+let mix = require('laravel-mix');
+
+mix.js('resources/js/main.js', 'public/assets/js')
+   .setPublicPath('public');
+
+## utiliser require pour les importation
+//remplaceer
+il faut changer simplement en require 
+import './bootstrap';
+// Par celle-ci
+require('./bootstrap');
+
+## si on veut continuer a utiliser les import inclurer babel dans le webpack
+
+let mix = require('laravel-mix');
+
+mix.js('resources/js/app.js', 'public/assets/js')
+   .setPublicPath('public')
+   .babelConfig({
+       presets: ['@babel/preset-env'],
+   });
+
+puis 
+
+Installer les dépendances nécessaires :
+
+Assurez-vous d'installer @babel/preset-env et babel-loader si ce n'est pas déjà fait :
+
+npm install --save-dev @babel/preset-env babel-loader
+
+## compiler les assets avec mix
+
+
+## avec le cdn
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+## Ajout du jeton CSRF
+Le jeton CSRF est nécessaire pour les requêtes sécurisées en Laravel. Assurez-vous que votre mise en page inclut cette balise :
+essentiel pour que on puisse faire des requetes securise du client vers le serveur
+
+<meta name="csrf-token" content="{{ csrf_token() }}">
+
+
+## afin de benificier du choix multiple 
+avec fonctionnaliser de recherche (version plus esthethique)
+telecharger si tu ne veux pas utiliser le CDN
+<link href="https://cdn.jsdelivr.net/npm/select2@4.0.13/dist/css/select2.min.css" rel="stylesheet" />
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.0.13/dist/js/select2.min.js"></script>
+
+https://github.com/select2/select2/releases
+
+
+Incluez les fichiers dans votre projet :
+
+Décompressez le fichier ZIP et placez les fichiers select2.min.css et select2.min.js dans un dossier, par exemple public/vendor/select2/.
+Modifiez votre code pour inclure les fichiers locaux : Dans votre fichier HTML, ajoutez les liens vers les fichiers locaux que vous avez téléchargés :
+
+<link rel="stylesheet" href="{{ asset('assets/select2/select2.min.css') }}">
+<script src="{{ asset('assets/select2/select2.min.js') }}"></script>
+
+on peut l'utiliser maintenant 

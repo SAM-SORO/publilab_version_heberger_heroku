@@ -4,39 +4,41 @@
 
 @extends('baseVisite')
 
-@section('title','Register')
+@section('title', 'Register')
 
 @section('Authentification')
     <a class="nav-link font-weight-bold active" href="#">Authentification</a>
 @endsection
 
-
-@section ('contenue-main')
+@section('contenue-main')
     <div class="container-fluid bg-light d-flex align-items-center justify-content-center mt-1 sign-height">
-        <form method="POST" action="{{route('register')}}" id="form-inscription" class="shadow-lg p-3 bg-white rounded autocomplete-off col-12 col-sm-10 col-md-9 col-lg-5 mt-5 mt-sm-5  mt-md-5">
+
+        @if(session()->has('error'))
+            <div class="alert alert-danger alert-dismissible fade show col-10 col-lg-4 col-sm-8 col-md-9 mt-3 mx-auto" role="alert" id="alert-danger-login">
+                {{Session::get('error')}}
+                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+        @endif
+
+        <form method="POST" action="{{ route('submitRegister') }}" id="form-inscription" class="shadow-lg p-3 bg-white rounded autocomplete-off col-12 col-sm-10 col-md-9 col-lg-5 mt-5">
+
             <div class="text-center"><h2>Inscription</h2></div><hr>
             @csrf
             <div class="form-group w-100 mt-2">
-                <label for="username">Nom d'utilisateur</label>
-                <input type="text" class="form-control @error('username') is-invalid @enderror" id="username" value="{{old('username')}}" name="username" required>
-                <small id="error-username" class="form-text text-danger"></small>
-                @error('username')
-                    <div class="error"><small id="error-username" class="form-text text-danger"></small></div>
-                @enderror
+                <label for="nom">Nom d'utilisateur</label>
+                <input type="text" class="form-control @error('nom') is-invalid @enderror" id="nom" value="{{ old('nom') }}" name="nom" required>
+                <small id="error-nom" class="form-text text-danger">@error('nom') {{ $message }} @enderror</small>
             </div>
 
             <div class="form-group w-100">
                 <label for="email">E-mail</label>
-                <input type="email" class="form-control @error('email') is-invalid @enderror" id="email" value="{{old('email')}}" name="email"  required>
-                {{-- url-emailExist='{{route('app_exist_email')}}' token ={{'csrf_to()'}}  --}}
-                <small id="error-email" class="form-text text-danger"></small>
-                @error('email')
-                    <div class="error"><small id="error-email" class="form-text text-danger"></small></div>
-                @enderror
+                <input type="email" class="form-control @error('email') is-invalid @enderror" id="email" value="{{ old('email') }}" name="email" required>
+                <small id="error-email" class="form-text text-danger">@error('email') {{ $message }} @enderror</small>
             </div>
 
-
-            <div class="form-group W-100 mb-4">
+            <div class="form-group w-100 mb-4">
                 <label for="password">Mot de passe</label>
                 <div class="input-group">
                     <input type="password" class="form-control @error('password') is-invalid @enderror" id="password" name="password" required>
@@ -46,16 +48,13 @@
                         </span>
                     </div>
                 </div>
-                <small id="error-password" class="form-text text-danger"></small>
-                @error('password')
-                    <div class="error"><small id="error-password" class="form-text text-danger"></small></div>
-                @enderror
+                <small id="error-password" class="form-text text-danger">@error('password') {{ $message }} @enderror</small>
             </div>
 
-            <div class="form-group W-100 mb-4">
-                <label for="confirm-password">Confirmer le mot de Passe</label>
+            <div class="form-group w-100 mb-4">
+                <label for="password_confirmation">Confirmer le mot de passe</label>
                 <div class="input-group">
-                    <input type="password" class="form-control @error('password') is-invalid @enderror" id="confirm-password" name="confirm-password" required>
+                    <input type="password" class="form-control" id="password_confirmation" name="password_confirmation" required>
                     <div class="input-group-append">
                         <span class="input-group-text" id="toggle-password2">
                             <i class="fa fa-eye-slash" aria-hidden="true"></i>
@@ -63,9 +62,6 @@
                     </div>
                 </div>
                 <small id="error-confirmPassword" class="form-text text-danger"></small>
-                @error('password')
-                    <div class="error"><small id="confirm-email" class="form-text text-danger"></small></div>
-                @enderror
             </div>
 
             <div class="w-100 mb-4">
@@ -73,12 +69,9 @@
             </div>
 
             <div class="w-100">
-                Dejà un compte? <a href="{{route('login')}}">Se connecter</a>
+                Déjà un compte? <a href="{{ route('login') }}">Se connecter</a>
             </div>
         </form>
-
-        {{-- style="background-color: #9b59b6; color: white; border:#9b59b6 !important; --}}
-
     </div>
 
     <script>

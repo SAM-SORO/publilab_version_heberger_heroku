@@ -5,6 +5,7 @@
 @extends('baseVisite')
 
 @section('title','Login')
+@section('gb-color','bg-light')
 
 {{-- ajouter ceci au menu du navbar --}}
 @section('Authentification')
@@ -13,9 +14,9 @@
 
 @section ('contenue-main')
 
-    <div class="sign-height bg-light mx-auto justify-content-center py-5 mt-4">
+    <div class="sign-height mx-auto justify-content-center py-4 mt-4">
         @if(session()->has('error'))
-            <div class="alert alert-danger alert-dismissible fade show col-10 col-lg-4 col-sm-8 col-md-9 mt-3 mx-auto" role="alert" id="alert-danger-login">
+            <div class="alert alert-danger alert-dismissible fade show col-10 col-lg-4 col-sm-8 col-md-9 mx-auto" role="alert" id="alert-danger-login">
                 {{Session::get('error')}}
                 <button type="button" class="close" data-dismiss="alert" aria-label="Close">
                   <span aria-hidden="true">&times;</span>
