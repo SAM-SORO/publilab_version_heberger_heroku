@@ -4,7 +4,6 @@ namespace Database\Seeders;
 
 // use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 
-use App\Http\Controllers\chercheurController;
 use Illuminate\Database\Seeder;
 
 class DatabaseSeeder extends Seeder
@@ -22,8 +21,8 @@ class DatabaseSeeder extends Seeder
         // ]);
 
         $this->call([
-            AdminTableSeeder::class,
-            VisiteurTableSeeder::class,
+            // AdminTableSeeder::class,
+            // VisiteurTableSeeder::class,
             EdpTableSeeder::class,
             UmriTableSeeder::class,
             LaboratoireTableSeeder::class,

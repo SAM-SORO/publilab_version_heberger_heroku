@@ -1,9 +1,8 @@
 <?php
 
 namespace Database\Seeders;
-use App\Models\Edp; // Assure-toi d'importer le modèle EDP
+use App\Models\EDP;
 
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
 class EdpTableSeeder extends Seeder
@@ -13,7 +12,7 @@ class EdpTableSeeder extends Seeder
      */
     public function run(): void
     {
-        Edp::create([
+        EDP::create([
             'nomEDP' => 'CAC', // Remplace par le nom souhaité
             'localisationEDP' => 'INPHB', // Remplace par la localisation souhaitée
             'WhatsAppUMI' => '1234567890', // Remplace par le numéro WhatsApp souhaité
