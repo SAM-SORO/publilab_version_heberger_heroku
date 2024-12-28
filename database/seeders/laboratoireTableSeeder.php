@@ -6,7 +6,7 @@ use App\Models\laboratoire;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
-class laboratoireTableSeeder extends Seeder
+class LaboratoireTableSeeder extends Seeder
 {
     /**
      * Run the database seeds.
