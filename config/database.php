@@ -63,7 +63,6 @@ return [
         //     ]) : [],
         // ],
 
-
         'mysql' => [
             'driver' => 'mysql',
             'host' => env('STACKHERO_MYSQL_HOST'),
