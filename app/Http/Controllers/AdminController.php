@@ -23,18 +23,18 @@ class AdminController extends Controller
     {
 
         $nombreChercheurs = Chercheur::count();
-        $nombreVisiteurs = Visiteur::count();
-        $nombreArticles = Article::count();
-        $nombreRevues = Revue::count();
-        $nombreUmris = UMRI::count();
-        $nombreLaboratoires = Laboratoire::count();
-        $nombreAxeRecherche = AxeRecherche::count();
-        $nombreThemes = Theme::count();
-        $nombreDoctorant = Doctorant::count();
-        $nombreGrade = Grade::count();
-        $nombreBdIndexation = BdIndexation::count();
+        // $nombreVisiteurs = Visiteur::count();
+        // $nombreArticles = Article::count();
+        // $nombreRevues = Revue::count();
+        // $nombreUmris = UMRI::count();
+        // $nombreLaboratoires = Laboratoire::count();
+        // $nombreAxeRecherche = AxeRecherche::count();
+        // $nombreThemes = Theme::count();
+        // $nombreDoctorant = Doctorant::count();
+        // $nombreGrade = Grade::count();
+        // $nombreBdIndexation = BdIndexation::count();
 
-        @dd(compact('nombreChercheurs', 'nombreVisiteurs', 'nombreArticles', 'nombreRevues', 'nombreUmris', 'nombreLaboratoires', 'nombreAxeRecherche', 'nombreThemes', 'nombreDoctorant', 'nombreGrade', 'nombreBdIndexation'));
+        @dd(compact('nombreChercheurs'));
 
 
         return view('lab.admin.index', compact('nombreChercheurs', 'nombreVisiteurs', 'nombreArticles', 'nombreRevues', 'nombreUmris', 'nombreLaboratoires', 'nombreAxeRecherche', 'nombreThemes' , 'nombreDoctorant' , 'nombreGrade', 'nombreBdIndexation'));
