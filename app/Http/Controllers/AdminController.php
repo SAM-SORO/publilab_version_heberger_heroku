@@ -34,6 +34,9 @@ class AdminController extends Controller
         $nombreGrade = Grade::count();
         $nombreBdIndexation = BdIndexation::count();
 
+        @dd(compact('nombreChercheurs', 'nombreVisiteurs', 'nombreArticles', 'nombreRevues', 'nombreUmris', 'nombreLaboratoires', 'nombreAxeRecherche', 'nombreThemes', 'nombreDoctorant', 'nombreGrade', 'nombreBdIndexation'));
+
+
         return view('lab.admin.index', compact('nombreChercheurs', 'nombreVisiteurs', 'nombreArticles', 'nombreRevues', 'nombreUmris', 'nombreLaboratoires', 'nombreAxeRecherche', 'nombreThemes' , 'nombreDoctorant' , 'nombreGrade', 'nombreBdIndexation'));
     }
 
