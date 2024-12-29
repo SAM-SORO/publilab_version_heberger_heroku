@@ -21,7 +21,9 @@ class AdminController extends Controller
 
     public function index()
     {
-        @dd("ici");
+        @dd(Chercheur::count());
+        @dd(Visiteur::count());
+
         $nombreChercheurs = Chercheur::count();
         $nombreVisiteurs = Visiteur::count();
         $nombreArticles = Article::count();
@@ -33,7 +35,6 @@ class AdminController extends Controller
         $nombreDoctorant = Doctorant::count();
         $nombreGrade = Grade::count();
         $nombreBdIndexation = BdIndexation::count();
-
 
         return view('lab.admin.index', compact('nombreChercheurs', 'nombreVisiteurs', 'nombreArticles', 'nombreRevues', 'nombreUmris', 'nombreLaboratoires', 'nombreAxeRecherche', 'nombreThemes' , 'nombreDoctorant' , 'nombreGrade', 'nombreBdIndexation'));
     }
