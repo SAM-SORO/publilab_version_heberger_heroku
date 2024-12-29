@@ -21,6 +21,7 @@ class AdminController extends Controller
 
     public function index()
     {
+        @dd("ici");
         $nombreChercheurs = Chercheur::count();
         $nombreVisiteurs = Visiteur::count();
         $nombreArticles = Article::count();
