@@ -4,7 +4,7 @@
     <title>Admin</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-    <meta name="csrf-token" content="{{ csrf_token() }}">
+    {{-- <meta name="csrf-token" content="{{ csrf_token() }}"> --}}
 
     <!-- Import des fichiers CSS -->
     <link rel="stylesheet" href="{{ mix('assets/css/app.css') }}">
@@ -15,7 +15,7 @@
     <!-- Favicon -->
     <link rel="icon" href="{{ mix('assets/img/favicon.ico') }}" sizes="any" type="image/x-icon">
     <link rel="apple-touch-icon" href="{{ mix('assets/img/apple-touch-icon.png') }}">
-    
+
     <style>
         .custom-link {
             text-decoration: none;
