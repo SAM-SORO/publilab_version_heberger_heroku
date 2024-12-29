@@ -23,8 +23,8 @@ class DatabaseSeeder extends Seeder
         $this->call([
             // AdminTableSeeder::class,
             // VisiteurTableSeeder::class,
-            EdpTableSeeder::class,
-            UmriTableSeeder::class,
+            // EdpTableSeeder::class,
+            // UmriTableSeeder::class,
             LaboratoireTableSeeder::class,
             ChercheurTableSeeder::class,
             ArticleTableSeeder::class,
