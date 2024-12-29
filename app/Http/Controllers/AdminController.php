@@ -36,7 +36,6 @@ class AdminController extends Controller
 
         @dd(compact('nombreChercheurs'));
 
-
         return view('lab.admin.index', compact('nombreChercheurs', 'nombreVisiteurs', 'nombreArticles', 'nombreRevues', 'nombreUmris', 'nombreLaboratoires', 'nombreAxeRecherche', 'nombreThemes' , 'nombreDoctorant' , 'nombreGrade', 'nombreBdIndexation'));
     }
 
