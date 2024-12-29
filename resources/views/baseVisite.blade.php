@@ -6,12 +6,16 @@
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title')</title>
-    <link rel="stylesheet" href="{{asset('fontawesome-free-6.5.1-web/css/all.css')}}">
-    <link rel="icon" href="{{ asset('assets/img/favicon.ico') }}" sizes="any" type="image/x-icon">
-    <link rel="apple-touch-icon" href="{{ asset('assets/img/apple-touch-icon.png') }}">
-    <link rel="stylesheet" href="{{ asset('assets/app.css') }}">
-    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.6.2/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+
+    <!-- Import des fichiers CSS -->
+    <link rel="stylesheet" href="{{ mix('assets/css/app.css') }}">
+    <link rel="stylesheet" href="{{ mix('assets/css/select2.min.css') }}">
+    <link rel="stylesheet" href="{{ mix('assets/css/fontawesome.min.css') }}">
+    <link rel="stylesheet" href="{{ mix('assets/css/bootstrap.min.css') }}">
+
+    <!-- Favicon -->
+    <link rel="icon" href="{{ mix('assets/img/favicon.ico') }}" sizes="any" type="image/x-icon">
+    <link rel="apple-touch-icon" href="{{ mix('assets/img/apple-touch-icon.png') }}">
 
 
     <style>
@@ -222,10 +226,11 @@
 
     @endif
 
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.10.2/dist/umd/popper.min.js"></script>
-    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.6.2/js/bootstrap.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-
+    <!-- Import des fichiers JS -->
+    <script src="{{ mix('assets/js/jquery.min.js') }}"></script>
+    <script src="{{ mix('assets/js/bootstrap.min.js') }}"></script>
+    <script src="{{ mix('assets/js/select2.min.js') }}"></script>
+    <script src="{{ mix('assets/js/app.js') }}"></script>
+    
 </body>
 </html>

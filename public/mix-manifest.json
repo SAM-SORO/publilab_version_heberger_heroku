@@ -1,3 +1,7 @@
 {
-    "/assets/js/app.js": "/assets/js/app.js"
+    "/assets/js/app.js": "/assets/js/app.js?id=37f677b91815939854319a4cae53b57f",
+    "/assets/css/app.css": "/assets/css/app.css?id=9f8d53913d620eb43735ba9b83c236bc",
+    "/assets/js/select2.min.js": "/assets/js/select2.min.js?id=86fee17cd48a321dbb33df5c823a3d95",
+    "/assets/js/jquery.min.js": "/assets/js/jquery.min.js?id=2c872dbe60f4ba70fb85356113d8b35e",
+    "/assets/js/bootstrap.min.js": "/assets/js/bootstrap.min.js?id=2a753de0369d13becc9649fc48f55535"
 }
