@@ -21,7 +21,7 @@ class AdminController extends Controller
 
     public function index()
     {
-
+        @dd(Revue::count());
         $nombreChercheurs = Chercheur::count();
         $nombreVisiteurs = Visiteur::count();
         $nombreArticles = Article::count();
