@@ -64,9 +64,9 @@
                 <small id="error-confirmPassword" class="form-text text-danger"></small>
             </div>
 
-            <div class="w-100 mb-4">
+            {{-- <div class="w-100 mb-4">
                 <button type="submit" class="btn w-100 soumettre" style="background-color: #9b59b6; color: white; border:#9b59b6" id="submit-inscription">S'inscrire</button>
-            </div>
+            </div> --}}
 
             <div class="w-100">
                 Déjà un compte? <a href="{{ route('login') }}">Se connecter</a>

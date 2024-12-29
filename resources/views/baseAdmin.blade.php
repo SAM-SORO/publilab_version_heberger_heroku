@@ -4,17 +4,18 @@
     <title>Admin</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-    <link href="https://fonts.googleapis.com/css?family=Poppins:300,400,500,600,700,800,900" rel="stylesheet">
-    <link rel="stylesheet" href="{{ asset('assets/app.css') }}">
-    <link rel="stylesheet" href="{{ asset('assets/select2/select2.min.css') }}">
-    <link rel="icon" href="{{ asset('assets/img/favicon.ico') }}" sizes="any" type="image/x-icon">
-    <link rel="apple-touch-icon" href="{{ asset('assets/img/apple-touch-icon.png') }}">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.6.2/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
 
+    <!-- Import des fichiers CSS -->
+    <link rel="stylesheet" href="{{ mix('assets/css/app.css') }}">
+    <link rel="stylesheet" href="{{ mix('assets/css/select2.min.css') }}">
+    <link rel="stylesheet" href="{{ mix('assets/css/fontawesome.min.css') }}">
+    <link rel="stylesheet" href="{{ mix('assets/css/bootstrap.min.css') }}">
 
-
+    <!-- Favicon -->
+    <link rel="icon" href="{{ mix('assets/img/favicon.ico') }}" sizes="any" type="image/x-icon">
+    <link rel="apple-touch-icon" href="{{ mix('assets/img/apple-touch-icon.png') }}">
+    
     <style>
         .custom-link {
             text-decoration: none;
@@ -174,12 +175,12 @@
 
     </div>
 
-    <script src="{{ asset('assets/bootstrap/jquery-3.7.1.min.js') }}"></script>
-    <script src="{{ asset('assets/bootstrap/js/bootstrap.bundle.min.js') }}"></script>
-    <script src="{{ asset('assets/js/app.js') }}"></script>
-    <script src="{{ asset('assets/select2/select2.min.js') }}"></script>
-    {{-- <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
-    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script> --}}
+
+    <!-- Import des fichiers JS -->
+    <script src="{{ mix('assets/js/jquery.min.js') }}"></script>
+    <script src="{{ mix('assets/js/bootstrap.min.js') }}"></script>
+    <script src="{{ mix('assets/js/select2.min.js') }}"></script>
+    <script src="{{ mix('assets/js/app.js') }}"></script>
 
     <!-- Section des scripts (en bas de la page pour les performances) -->
     @yield('scripts') <!-- Cette ligne permet d'inclure les scripts spécifiques à chaque vue -->

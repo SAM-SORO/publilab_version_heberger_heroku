@@ -13,15 +13,14 @@
     <div class="container custom-height mt-md-5 d-flex flex-column flex-md-row align-items-center">
         <!-- Texte à gauche -->
         <div class="text-section w-100 w-md-50 pr-md-5 mb-4 mb-md-0 mt-md-5">
-            <h1 class="landing-header">PubliLab : Consulter, Publier et télécharger des articles</h1>
-
+            <h1 class="landing-header">PubliLab : Découvrez les articles des chercheurs de l'INP</h1>
             <p class="landing-description">
-                Publilab est une plateforme centralisée de l'INPHB dédiée à la publication d'articles de recherche des différents laboratoires ...
+                PubliLab est une plateforme de l'INPHB dédiée au référencement des articles de recherche publiés dans les revues scientifiques et rédigés par ses chercheurs.
             </p>
-
             <!-- Bouton "Voir Les Publications" -->
-            <a href="{{ route('visiteur.article') }}" class="btn btn-primary mt-3 text-center">Voir Les Publications</a>
+            <a href="{{ route('visiteur.article') }}" class="btn btn-primary mt-3 text-center">Voir les publications</a>
         </div>
+
 
         <!-- Image à droite -->
         <div class="image-section w-100 w-md-50 text-center mb-md-0">

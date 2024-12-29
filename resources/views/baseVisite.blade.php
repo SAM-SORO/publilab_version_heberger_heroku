@@ -207,15 +207,15 @@
                         <!-- Partie centrale -->
                         <div class="col-12 col-md-4 d-flex flex-column align-items-center text-center mb-4 mb-md-0">
                             <h5>À propos de l'application</h5>
-                            <p>Notre application vous permet de gérer vos opérations facilement et efficacement. Profitez de fonctionnalités avancées pour améliorer votre productivité.</p>
+                            <p>Faciliter l'accès aux articles publiés par les chercheurs pour tous.</p>
                         </div>
 
                         <!-- Partie droite -->
                         <div class="col-12 col-md-4 d-flex justify-content-center">
                             <div class="d-flex flex-column align-items-center align-items-md-start text-center text-md-start">
                                 <h5>Contact</h5>
-                                <p>Email : contact@votreapp.com</p>
-                                <p>Téléphone : +33 1 23 45 67 89</p>
+                                <p>Email : samsoro05@gmail.com</p>
+                                <p>Téléphone : +225 05 46 82 93 08</p>
                                 <a href="http://www.inphb.ci" target="_blank">INPHB web site</a>
                             </div>
                         </div>
@@ -231,6 +231,6 @@
     <script src="{{ mix('assets/js/bootstrap.min.js') }}"></script>
     <script src="{{ mix('assets/js/select2.min.js') }}"></script>
     <script src="{{ mix('assets/js/app.js') }}"></script>
-    
+
 </body>
 </html>
