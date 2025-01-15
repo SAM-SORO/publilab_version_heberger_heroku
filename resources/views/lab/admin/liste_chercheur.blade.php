@@ -103,9 +103,13 @@
                                         <ul class="list-unstyled">
                                             @foreach ($chercheur->grades as $grade)
                                                 <li>
-                                                    {{ $grade->sigleGrade }} (Depuis le {{ Carbon::parse($grade->pivot->dateGrade)->format('d-m-Y') }})
+                                                    -{{ $grade->sigleGrade }}
+                                                    @if ($grade->pivot->dateGrade)
+                                                        (Depuis le {{ \Carbon\Carbon::parse($grade->pivot->dateGrade)->format('d-m-Y') }})
+                                                    @endif
                                                 </li>
                                             @endforeach
+
                                         </ul>
                                     </li>
                                 @endif
@@ -281,14 +285,12 @@
     </div>
 </div>
 
-
-
-<!-- Modal unique pour ajouter un grade -->
+<!-- Modal pour Attribuer les Grades -->
 <div class="modal fade" id="ajouterGradeModal" tabindex="-1" role="dialog" aria-labelledby="ajouterGradeModalLabel" aria-hidden="true">
     <div class="modal-dialog" role="document">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="ajouterGradeModalLabel">Ajouter un Grade</h5>
+                <h5 class="modal-title" id="ajouterGradeModalLabel">Attribuer des Grades</h5>
                 <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                     <span aria-hidden="true">&times;</span>
                 </button>
@@ -298,34 +300,28 @@
                     @csrf
                     <input type="hidden" id="chercheurId" name="chercheurId">
 
+                    <!-- Affichage du nom du chercheur -->
                     <div class="mb-3">
                         <label for="chercheurNom" class="form-label">Chercheur</label>
-                        <input type="text" class="form-control mb-4" id="chercheurNom" name="chercheurNom" value="{{ old('chercheurNom') }}" readonly>
+                        <input type="text" class="form-control" id="chercheurNom" readonly>
                     </div>
 
-                    <div id="gradesContainer">
-                        <div class="mb-3 grade-block">
-                            <label for="sigleGrade" class="form-label">Sigle du grade</label>
-                            <input type="text" class="form-control mb-4 @error('grades.0.sigleGrade') is-invalid @enderror" name="grades[0][sigleGrade]" value="{{ old('grades.0.sigleGrade') }}" placeholder="Sigle du grade">
-                            @error('grades.0.sigleGrade')
-                                <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
-
-                            <label for="nomGrade" class="form-label">Nom du grade</label>
-                            <input type="text" class="form-control mb-4 @error('grades.0.nomGrade') is-invalid @enderror" name="grades[0][nomGrade]" value="{{ old('grades.0.nomGrade') }}" required>
-                            @error('grades.0.nomGrade')
-                                <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
-
-                            <label for="dateGrade" class="form-label">Date d'attribution</label>
-                            <input type="date" class="form-control mb-4 @error('grades.0.dateGrade') is-invalid @enderror" name="grades[0][dateGrade]" value="{{ old('grades.0.dateGrade') }}">
-                            @error('grades.0.dateGrade')
-                                <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
-                        </div>
+                    <!-- Sélection des grades avec Select2 -->
+                    <div class="form-group mb-4">
+                        <label for="grades">Sélectionner les Grades</label>
+                        <select class="form-control select2" id="grades" name="grades[]" multiple>
+                            @foreach ($grades as $grade)
+                                <option value="{{ $grade->idGrade }}">{{ $grade->nomGrade }} ({{ $grade->sigleGrade }})</option>
+                            @endforeach
+                        </select>
+                        <small class="text-muted">Vous pouvez sélectionner plusieurs grades</small>
                     </div>
 
-                    <button type="button" class="btn btn-secondary" id="addGradeButton">Ajouter un autre grade</button>
+                    <!-- Container pour les dates des grades -->
+                    <div id="dates-container" class="mt-4">
+                        <!-- Les champs de date sont générés dynamiquement ici -->
+                    </div>
+
                     <button type="submit" class="btn btn-primary">Enregistrer</button>
                 </form>
             </div>
@@ -334,66 +330,53 @@
 </div>
 
 
-
 @section('scripts')
 
 <script>
-    $(document).ready(function() {
-        // Remplir le modal avec les données du chercheur
-        $('#ajouterGradeModal').on('show.bs.modal', function(event) {
-            var button = $(event.relatedTarget);
-            var chercheurId = button.data('id');
-            var chercheurNom = button.data('nom');
-
-            $(this).find('#chercheurId').val(chercheurId);
-            $(this).find('#chercheurNom').val(chercheurNom);
+    $(document).ready(function () {
+        // Initialisation de Select2
+        $('.select2').select2({
+            placeholder: "Sélectionnez les grades",
+            allowClear: true,
+            width: '100%' // Adaptation responsive
         });
 
-        // Ajout dynamique des champs de grade
-        var addGradeButton = document.getElementById('addGradeButton');
-        var gradesContainer = document.getElementById('gradesContainer');
+        // Dynamiser l'ajout des champs de date pour chaque grade sélectionné
+        $('#grades').on('change', function () {
+            const selectedGrades = $(this).val(); // Récupérer les grades sélectionnés
+            const datesContainer = $('#dates-container');
 
-        addGradeButton.addEventListener('click', function() {
-            var gradeIndex = gradesContainer.querySelectorAll('.grade-block').length;
+            // Vider le conteneur des dates
+            datesContainer.empty();
 
-            var gradeBlock = document.createElement('div');
-            gradeBlock.classList.add('mb-3', 'grade-block');
-
-            gradeBlock.innerHTML = `
-                <div class="d-flex align-items-center">
-                    <div class="flex-grow-1">
-                        <label for="sigleGrade" class="form-label">Sigle du grade</label>
-                        <input type="text" class="form-control mb-4 @error('grades.${gradeIndex}.sigleGrade') is-invalid @enderror" name="grades[${gradeIndex}][sigleGrade]" placeholder="Sigle du grade">
-                        @error('grades.${gradeIndex}.sigleGrade')
-                            <div class="invalid-feedback">{{ $message }}</div>
-                        @enderror
-
-                        <label for="nomGrade" class="form-label">Nom du grade</label>
-                        <input type="text" class="form-control mb-4 @error('grades.${gradeIndex}.nomGrade') is-invalid @enderror" name="grades[${gradeIndex}][nomGrade]" required>
-                        @error('grades.${gradeIndex}.nomGrade')
-                            <div class="invalid-feedback">{{ $message }}</div>
-                        @enderror
-
-                        <label for="dateGrade" class="form-label">Date d'attribution</label>
-                        <input type="date" class="form-control mb-4 @error('grades.${gradeIndex}.dateGrade') is-invalid @enderror" name="grades[${gradeIndex}][dateGrade]">
-                        @error('grades.${gradeIndex}.dateGrade')
-                            <div class="invalid-feedback">{{ $message }}</div>
-                        @enderror
+            // Générer un champ pour chaque grade sélectionné
+            selectedGrades.forEach(function (gradeId) {
+                const gradeName = $('#grades option[value="' + gradeId + '"]').text();
+                const dateField = `
+                    <div class="form-group mb-3 date-group" data-grade-id="${gradeId}">
+                        <label>Date d'obtention pour le grade : ${gradeName}</label>
+                        <input type="date" class="form-control" name="dates[${gradeId}]">
                     </div>
-                    <button type="button" class="btn btn-danger btn-sm remove-grade">Retirer</button>
-                </div>
-            `;
-
-            gradesContainer.appendChild(gradeBlock);
-
-            // Ajout d'un événement pour supprimer le champ
-            gradeBlock.querySelector('.remove-grade').addEventListener('click', function() {
-                gradesContainer.removeChild(gradeBlock);
+                `;
+                datesContainer.append(dateField);
             });
         });
+
+        // Gérer les données dans le modal
+        $('#ajouterGradeModal').on('show.bs.modal', function (event) {
+            const button = $(event.relatedTarget);
+            const chercheurId = button.data('id');
+            const chercheurNom = button.data('nom');
+
+            // Remplir les champs cachés et affichés
+            $('#chercheurId').val(chercheurId);
+            $('#chercheurNom').val(chercheurNom);
+
+            // Réinitialiser Select2 et le conteneur des dates
+            $('#grades').val(null).trigger('change');
+            $('#dates-container').empty();
+        });
     });
-
-
 
 
     function confirmDelete(chercheurId) {

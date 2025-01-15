@@ -65,6 +65,8 @@ Route::middleware(['auth:chercheur'])->group(function(){
 
     Route::get('/espace-chercheur', [ChercheurController::class, 'index'])->name('chercheur.espace');
 
+    Route::get('/listes-articles/chercheur', [ChercheurController::class, 'listeArticles'])->name('chercheur.listeArticles');
+
     Route::get('/modifier/article/{id}', [ChercheurController::class, 'modifierArticle'])->name('chercheur.modifierArticle');
 
     Route::post('/article/{id}/modifier', [ChercheurController::class, 'updateArticle'])->name('chercheur.updateArticle');
@@ -90,6 +92,7 @@ Route::middleware(['auth:chercheur'])->group(function(){
 
 // Admin
 Route::prefix('admin')->middleware(['auth:admin'])->group(function (){
+
     Route::get('/espace-admin', [AdminController::class, 'index'])->name('admin.espace');
 
     //ce qui est communs aux deux jai mis pour chacun dans son controlleur
@@ -173,7 +176,6 @@ Route::prefix('admin')->middleware(['auth:admin'])->group(function (){
 
 
     Route::get('/rechercher-doctorant', [DoctorantController::class, 'search'])->name('admin.rechercherDoctorant');
-
 
 
 

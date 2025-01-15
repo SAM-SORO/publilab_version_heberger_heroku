@@ -43,6 +43,8 @@ return [
             'foreign_key_constraints' => env('DB_FOREIGN_KEYS', true),
         ],
 
+
+        #en ligne
         'mysql' => [
             'driver' => 'mysql',
             'url' => env('DATABASE_URL'),
@@ -67,28 +69,26 @@ return [
             ]) : [],
         ],
 
+
+        #en locale
         // 'mysql' => [
         //     'driver' => 'mysql',
-        //     'host' => env('STACKHERO_MYSQL_HOST'),
-        //     'port' => env('STACKHERO_MYSQL_PORT'),
-        //     'username' => env('STACKHERO_MYSQL_USER'),
-        //     'password' => env('STACKHERO_MYSQL_PASSWORD'),
-        //     'database' => env('STACKHERO_MYSQL_DATABASE'),
+        //     'url' => env('DATABASE_URL'),
+        //     'host' => env('DB_HOST', '127.0.0.1'),
+        //     'port' => env('DB_PORT', '3306'),
+        //     'database' => env('DB_DATABASE', 'forge'),
+        //     'username' => env('DB_USERNAME', 'forge'),
+        //     'password' => env('DB_PASSWORD', ''),
+        //     'unix_socket' => env('DB_SOCKET', ''),
         //     'charset' => 'utf8mb4',
         //     'collation' => 'utf8mb4_unicode_ci',
         //     'prefix' => '',
         //     'prefix_indexes' => true,
         //     'strict' => true,
         //     'engine' => null,
-        //     'sslmode' => 'require',
-        //     'options' => extension_loaded('pdo_mysql')
-        //         ? array_filter([
-        //             // Si vous rencontrez l'erreur "Uncaught PDOException: PDO::__construct(): SSL operation failed with code 1..."
-        //             PDO::MYSQL_ATTR_SSL_CAPATH => '/etc/ssl/certs/',
-        //             // PDO::MYSQL_ATTR_SSL_CA => 'isrgrootx1.pem',
-        //             PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT => true,
-        //         ])
-        //         : [],
+        //     'options' => extension_loaded('pdo_mysql') ? array_filter([
+        //         PDO::MYSQL_ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA'),
+        //     ]) : [],
         // ],
 
 

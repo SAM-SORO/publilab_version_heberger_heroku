@@ -15,9 +15,10 @@
     <link rel="stylesheet" href="{{ mix('assets/css/bootstrap.min.css') }}">
 
     <!-- Favicon -->
-    <link rel="icon" href="{{ mix('assets/img/favicon.ico') }}" sizes="any" type="image/x-icon">
-    <link rel="apple-touch-icon" href="{{ mix('assets/img/apple-touch-icon.png') }}">
+    <link rel="icon" href="{{ asset('assets/img/favicon.ico') }}" sizes="any" type="image/x-icon">
+    <link rel="apple-touch-icon" href="{{ asset('assets/img/apple-touch-icon.png') }}">
 <style>
+
     .custom-link {
             text-decoration: none;
             color: inherit; /* Keeps the original color */
@@ -55,11 +56,19 @@
 
                     <ul class="list-unstyled components mb-5">
                         <ul class="list-unstyled components mb-5">
+
                             <li class="mb-3">
                                 <a href="{{ route('chercheur.espace') }}" class="{{ request()->routeIs('chercheur.espace') ? 'active' : '' }}">
-                                    <span class="fas fa-book-open mr-3"></span>Mes articles
+                                    <span class="fas fa-tachometer-alt mr-3"></span>Dashboard
                                 </a>
                             </li>
+
+                            <li class="mb-3">
+                                <a href="{{ route('chercheur.listeArticles') }}" class="{{ request()->routeIs('chercheur.listeArticles') ? 'active' : '' }}">
+                                <span class="fas fa-book-open mr-3"></span>Mes articles
+                                </a>
+                            </li>
+
                             <li class="mb-3">
                                 <a href="{{ route('home') }}" class="{{ request()->routeIs('home') ? 'active' : '' }}">
                                     <span class="fas fa-home mr-3"></span>Page de visite

@@ -33,6 +33,16 @@ class Chercheur extends Authenticatable
     ];
 
 
+    // Relation avec Grade (many-to-many)
+    public function grades()
+    {
+        return $this->belongsToMany(Grade::class, 'chercheur_grade', 'idCherch', 'idGrade')
+                    ->withPivot('dateGrade');
+        // Un chercheur peut avoir plusieurs grades,
+        // et un grade peut être attribué à plusieurs chercheurs.
+    }
+
+
     // Relation avec Article (many-to-many)
     public function articles()
     {
@@ -41,6 +51,7 @@ class Chercheur extends Authenticatable
         // Un chercheur peut avoir plusieurs articles,
         // et un article peut être écrit par plusieurs chercheurs.
     }
+
 
     // Relation avec Laboratoire (inverse de la relation one-to-many)
     public function laboratoire()
@@ -60,14 +71,7 @@ class Chercheur extends Authenticatable
 
 
 
-    // Relation avec Grade (many-to-many)
-    public function grades()
-    {
-        return $this->belongsToMany(Grade::class, 'chercheur_grade', 'idCherch', 'idGrade')
-                    ->withPivot('dateGrade');
-        // Un chercheur peut avoir plusieurs grades,
-        // et un grade peut être attribué à plusieurs chercheurs.
-    }
+
 
 
     // Relation avec les articles et doctorants via la table Doctorant_Article_Chercheur

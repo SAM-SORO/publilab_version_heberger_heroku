@@ -39,20 +39,27 @@ class RevueController extends Controller
                 'nomRevue' => 'required|string|max:255',
                 'descRevue' => 'nullable|string',
                 'typeRevue' => 'nullable|string|max:255',
-                'bdIndexation' => 'nullable|exists:bd_indexations,idBDIndex', // Peut être null pour une sélection ultérieure
-                'dateDebut' => 'nullable|date',
-                'dateFin' => 'nullable|date|after_or_equal:dateDebut',
+                'bdIndexation' => 'nullable|array', // Vérifie que c'est un tableau
+                'bdIndexation.*' => 'exists:bd_indexations,idBDIndex', // Chaque élément doit exister dans la table bd_indexations
+                'dateDebut' => 'nullable|array', // Tableau des dates de début
+                'dateDebut.*' => 'nullable|date', // Chaque date doit être valide
+                'dateFin' => 'nullable|array', // Tableau des dates de fin
+                'dateFin.*' => 'nullable|date|after_or_equal:dateDebut.*', // Chaque date de fin doit être valide et >= dateDebut
             ], [
                 // Messages personnalisés
                 'ISSN.max' => 'Le numéro ISSN ne peut pas dépasser 255 caractères.',
                 'nomRevue.required' => 'Le nom de la revue est obligatoire.',
                 'nomRevue.max' => 'Le nom de la revue ne doit pas dépasser 255 caractères.',
                 'typeRevue.max' => 'Le type de revue ne doit pas dépasser 255 caractères.',
-                'bdIndexation.exists' => 'La base d\'indexation sélectionnée est invalide.',
-                'dateDebut.date' => 'La date de début doit être une date valide.',
-                'dateFin.date' => 'La date de fin doit être une date valide.',
-                'dateFin.after_or_equal' => 'La date de fin doit être égale ou postérieure à la date de début.',
+                'bdIndexation.*.exists' => 'L\'une des bases d\'indexation sélectionnées est invalide.',
+                'dateDebut.*.date' => 'L\'une des dates de début n\'est pas valide.',
+                'dateFin.*.date' => 'L\'une des dates de fin n\'est pas valide.',
+                'dateFin.*.after_or_equal' => 'Chaque date de fin doit être égale ou postérieure à la date de début correspondante.',
             ]);
+
+
+
+
 
             // Enregistrement de la revue
             $revue = Revue::create([
@@ -62,15 +69,21 @@ class RevueController extends Controller
                 'typeRevue' => $request->typeRevue,
             ]);
 
-            // Si une base d'indexation est sélectionnée, l'attacher
+            // Attachement des bases d'indexation avec leurs dates correspondantes
             if ($request->bdIndexation) {
-                $revue->bdIndexations()->attach(
-                    $request->bdIndexation,
-                    [
-                        'dateDebut' => $request->dateDebut,
-                        'dateFin' => $request->dateFin,
-                    ]
-                );
+                foreach ($request->bdIndexation as $index => $bdIndexationId) {
+
+
+                    // Vérifier et définir les valeurs des dates
+                    $dateDebut = !empty($request->dateDebut[$index]) ? $request->dateDebut[$index] : null;
+                    $dateFin = !empty($request->dateFin[$index]) ? $request->dateFin[$index] : null;
+
+                    // Attacher à la revue uniquement si les dates sont valides ou nulles
+                    $revue->bdIndexations()->attach($bdIndexationId, [
+                        'dateDebut' => $dateDebut,
+                        'dateFin' => $dateFin,
+                    ]);
+                }
             }
 
             // Commit de la transaction
@@ -78,7 +91,6 @@ class RevueController extends Controller
 
             // Redirection après enregistrement
             return redirect()->route('admin.listeRevue')->with('success', 'Revue ajoutée avec succès.');
-
         } catch (\Exception $e) {
             // Annuler la transaction en cas d'erreur
             DB::rollBack();
@@ -86,10 +98,9 @@ class RevueController extends Controller
             // Redirection avec un message d'erreur
             return redirect()->back()
                 ->withInput()
-                ->with('error', 'Une erreur est survenue lors de l\'ajout de la revue : ' . $e->getMessage());
+                ->with('error', 'Une erreur est survenue lors de l\'ajout de la revue.');
         }
     }
-
 
 
     // Méthode pour modifier une revue (optionnel, si nécessaire)
@@ -102,71 +113,54 @@ class RevueController extends Controller
 
 
 
-    public function update(Request $request, $id)
+    public function update(Request $request, $idRevue)
     {
-        // Début de la transaction
-        DB::beginTransaction();
+        // Validation des données du formulaire
+        $validatedData = $request->validate([
+            'ISSN' => 'required|string|max:255',
+            'nomRevue' => 'required|string|max:255',
+            'descRevue' => 'nullable|string',
+            'typeRevue' => 'nullable|string|max:255',
+            'bdIndexation' => 'nullable|array',
+            'bdIndexation.*' => 'exists:bd_indexations,idBDIndex', // Correction du nom de la table
+            'dateDebut' => 'nullable|array',
+            'dateDebut.*' => 'nullable|date',
+            'dateFin' => 'nullable|array',
+            'dateFin.*' => 'nullable|date|after_or_equal:dateDebut.*',
+        ]);
 
-        try {
-            // Validation des données
-            $validated = $request->validate([
-                'ISSN' => 'nullable|string|max:255', // ISSN devient nullable
-                'nomRevue' => 'required|string|max:255',
-                'descRevue' => 'nullable|string',
-                'typeRevue' => 'nullable|string|max:255', // Désormais non obligatoire
-                'bdIndexation' => 'required|exists:bd_indexations,idBDIndex',
-                'dateDebut' => 'nullable|date', // dateDebut devient nullable
-                'dateFin' => 'nullable|date|after_or_equal:dateDebut', // dateFin devient nullable
-            ], [
-                'ISSN.max' => 'Le numéro ISSN ne doit pas dépasser 255 caractères.',
-                'nomRevue.required' => 'Le nom de la revue est obligatoire.',
-                'nomRevue.max' => 'Le nom de la revue ne doit pas dépasser 255 caractères.',
-                'typeRevue.max' => 'Le type de revue ne doit pas dépasser 255 caractères.',
-                'bdIndexation.required' => 'La base d\'indexation est obligatoire.',
-                'bdIndexation.exists' => 'La base d\'indexation sélectionnée n\'existe pas.',
-                'dateDebut.date' => 'La date de début doit être une date valide.',
-                'dateFin.date' => 'La date de fin doit être une date valide.',
-                'dateFin.after_or_equal' => 'La date de fin doit être égale ou postérieure à la date de début.',
-            ]);
+        // Récupération de la revue existante
+        $revue = Revue::findOrFail($idRevue);
 
-            // Récupérer la revue
-            $revue = Revue::findOrFail($id);
+        // Mise à jour des champs principaux de la revue
+        $revue->update([
+            'ISSN' => $validatedData['ISSN'],
+            'nomRevue' => $validatedData['nomRevue'],
+            'descRevue' => $validatedData['descRevue'] ?? null, // Ajout de `null` pour les champs optionnels
+            'typeRevue' => $validatedData['typeRevue'] ?? null,
+        ]);
 
-            // Mettre à jour les informations de base de la revue
-            $revue->update([
-                'ISSN' => $validated['ISSN'] ?? null, // Accepte les valeurs nulles
-                'nomRevue' => $validated['nomRevue'],
-                'descRevue' => $validated['descRevue'],
-                'typeRevue' => $validated['typeRevue'] ?? null, // Accepte les valeurs nulles
-            ]);
+        // Mise à jour des relations avec les bases d'indexation
+        if (isset($validatedData['bdIndexation'])) {
+            $syncData = [];
 
-            // Détacher d'abord toutes les relations existantes
+            foreach ($validatedData['bdIndexation'] as $bdIndexId) {
+                $syncData[$bdIndexId] = [
+                    'dateDebut' => $validatedData['dateDebut'][$bdIndexId] ?? null,
+                    'dateFin' => $validatedData['dateFin'][$bdIndexId] ?? null,
+                ];
+            }
+
+            // Synchronisation des relations avec la table pivot
+            $revue->bdIndexations()->sync($syncData);
+        } else {
+            // Si aucune base d'indexation n'est sélectionnée, on vide la relation
             $revue->bdIndexations()->detach();
-
-            // Attacher la nouvelle relation avec les dates, en vérifiant les valeurs nulles
-            $revue->bdIndexations()->attach($validated['bdIndexation'], [
-                'dateDebut' => $validated['dateDebut'], // Peut être null
-                'dateFin' => $validated['dateFin'],     // Peut être null
-            ]);
-
-            // Commit de la transaction
-            DB::commit();
-
-            // Rediriger avec un message de succès
-            return redirect()->route('admin.listeRevue')
-                ->with('success', 'Revue modifiée avec succès.');
-
-        } catch (\Exception $e) {
-            // Annuler la transaction en cas d'erreur
-            DB::rollBack();
-
-            // Rediriger avec un message d'erreur
-            return redirect()->back()
-                ->withInput()
-                ->with('error', 'Une erreur est survenue lors de la modification de la revue : ' . $e->getMessage());
         }
-    }
 
+        // Redirection avec un message de succès
+        return redirect()->back()->with('success', 'Revue mise à jour avec succès.');
+    }
 
 
 

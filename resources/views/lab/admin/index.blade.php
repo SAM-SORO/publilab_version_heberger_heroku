@@ -91,23 +91,23 @@
         <div class="row flex-column p-4">
             <div class="col-12 mt-4">
                 <div class="row">
-                    <div class="col-12">
+                    <div class="col-6">
                         <div class="shadow p-5 rounded bg-white">
                             <h5 class="text-danger">Nombre de base d'indexation</h5>
-                            <a href="{{ route('admin.listeDoctorant') }}"><h2 class="text-center">{{ $nombreBdIndexation }}</h2></a>
+                            <a href="{{ route('admin.listeBaseIndexation') }}"><h2 class="text-center">{{ $nombreBdIndexation }}</h2></a>
 
                         </div>
                     </div>
-                    {{--
+
                         <div class="col-6">
                             <div class="shadow p-5 rounded bg-white">
-                                <h5 class="text-danger">Nombre de grades</h5>
-                                <a href="{{ route('admin.listeGrade') }}"><h2 class="text-center">{{ $nombreGrade}}</h2></a>
+                                <h5 class="text-danger">Nombre de revues</h5>
+                                <a href="{{ route('admin.listeRevue') }}"><h2 class="text-center">{{ $nombreRevues}}</h2></a>
 
                             </div>
 
                         </div>
-                    --}}
+
                 </div>
             </div>
         </div>

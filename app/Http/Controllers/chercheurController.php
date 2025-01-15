@@ -21,7 +21,31 @@ use Illuminate\Support\Facades\Session;
 class chercheurController extends Controller
 {
 
+
     public function index()
+    {
+        // Récupérer le chercheur connectép
+        $chercheurConnecte = Auth::user();
+
+        // Vérifier si un chercheur est connecté
+        if (!$chercheurConnecte) {
+            return redirect()->route('login')->with('error', 'Vous devez être connecté pour accéder à cette page.');
+        }
+
+        // Compter le nombre d'articles associés au chercheur connecté
+        // $NbreArticles = $chercheurConnecte->articles()->count();
+
+        $NbreArticles = Article::whereHas('chercheurs', function ($query) use ($chercheurConnecte) {
+            $query->where('chercheur_article.idCherch', $chercheurConnecte->idCherch);
+        })->count();
+
+
+        // Retourner la vue avec les données
+        return view('lab.chercheur.index', compact('NbreArticles'));
+    }
+
+
+    public function listeArticles()
     {
         // Récupérer le chercheur connecté
         $chercheurConnecte = Auth::user(); // Récupère le chercheur connecté
@@ -48,7 +72,7 @@ class chercheurController extends Controller
         $chercheurs = Chercheur::all();
 
         // Retourner la vue avec les données
-        return view('lab.chercheur.index', compact('articles', 'annees', 'revues', 'chercheurs'));
+        return view('lab.chercheur.liste_article', compact('articles', 'annees', 'revues', 'chercheurs'));
     }
 
 

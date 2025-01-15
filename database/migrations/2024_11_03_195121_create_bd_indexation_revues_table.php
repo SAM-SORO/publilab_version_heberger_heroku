@@ -14,8 +14,8 @@ return new class extends Migration
         Schema::create('bdindexation_revue', function (Blueprint $table) {
             $table->foreignId('idBDInd')->constrained('bd_indexations', 'idBDIndex'); // Clé étrangère vers bd_indexations.idBDIndex
             $table->foreignId('idRevue')->constrained('revues', 'idRevue');            // Clé étrangère vers revues.idRevue
-            $table->date('dateDebut');                                                 // Champ requis pour la date de début
-            $table->date('dateFin');                                                   // Champ requis pour la date de fin
+            $table->date('dateDebut')->nullable();                                                 // Champ requis pour la date de début
+            $table->date('dateFin')->nullable();                                                   // Champ requis pour la date de fin
             $table->primary(['idBDInd', 'idRevue']);                                   // Définir la clé primaire composite
         });
     }

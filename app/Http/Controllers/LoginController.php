@@ -55,6 +55,10 @@ class LoginController extends Controller
         $request->validate([
             'email_visit' => 'required|email',
             'password_visit' => 'required',
+        ], [
+            'email_visit.required' => 'L\'adresse email est obligatoire.',
+            'email_visit.email' => 'Veuillez fournir une adresse email valide.',
+            'password_visit.required' => 'Le mot de passe est obligatoire.',
         ]);
 
         $credentiels = [
@@ -108,7 +112,7 @@ class LoginController extends Controller
 
         // Si aucun utilisateur n'a été trouvé
         session()->flash("error", "Adresse email ou mot de passe incorrect");
-        return redirect()->route('login');
+        return redirect()->route('login')->withInput();
 
     }
 

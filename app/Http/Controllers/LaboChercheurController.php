@@ -100,73 +100,48 @@ class LaboChercheurController extends Controller
 
     public function addGrade(Request $request)
     {
-        // Validation des données envoyées par le formulaire
+        // Validation des données
         $validated = $request->validate([
             'chercheurId' => 'required|exists:chercheurs,idCherch',
-            'grades.*.sigleGrade' => 'nullable|string|max:255',
-            'grades.*.nomGrade' => 'required|string|max:255',
-            'grades.*.dateGrade' => 'nullable|date',
+            'grades' => 'required|array',
+            'grades.*' => 'exists:grades,idGrade', // Vérifie que chaque grade existe
+            'dates' => 'array', // Valide le tableau des dates
+            'dates.*' => 'nullable|date', // Chaque date doit être valide
         ], [
-            'grades.*.sigleGrade.max' => 'Le sigle du grade ne peut pas dépasser 255 caractères.',
-            'grades.*.nomGrade.required' => 'Le nom du grade est obligatoire.',
-            'grades.*.dateGrade.date' => 'La date d\'attribution doit être une date valide.',
+            'grades.required' => 'Vous devez sélectionner au moins un grade.',
+            'grades.*.exists' => 'Un grade sélectionné est invalide.',
+            'dates.*.date' => 'Chaque date doit être valide.',
         ]);
 
-        // Utiliser une transaction pour l'ajout des grades
-        DB::beginTransaction();
+        // Récupération du chercheur
+        $chercheur = Chercheur::find($validated['chercheurId']);
+
+        if (!$chercheur) {
+            return redirect()->back()->with('error', 'Chercheur non trouvé.');
+        }
 
         try {
-            // Récupérer le chercheur
-            $chercheur = Chercheur::find($request->chercheurId);
+            // Parcourir les grades sélectionnés
+            foreach ($validated['grades'] as $gradeId) {
+                // Récupérer la date associée au grade (s'il y en a une)
+                $dateGrade = $validated['dates'][$gradeId] ?? null;
 
-            if (!$chercheur) {
-                return redirect()->back()->with('error', 'Chercheur non trouvé.');
+                // Vérifier si le grade est déjà associé au chercheur
+                if (!$chercheur->grades->contains($gradeId)) {
+                    // Ajouter le grade avec la date dans la table pivot
+                    $chercheur->grades()->attach($gradeId, ['dateGrade' => $dateGrade]);
+                }
             }
 
-            // Ajouter les grades explicitement dans la table de liaison
-            foreach ($request->grades as $gradeData) {
-                // Trouver ou créer le grade avec sigle et nom
-                $grade = Grade::firstOrCreate([
-                    'sigleGrade' => $gradeData['sigleGrade'],
-                    'nomGrade' => $gradeData['nomGrade']
-                ]);
-
-
-                // Si la date est fournie, l'utiliser, sinon la laisser null
-                $dateGrade = $gradeData['dateGrade'] ?: null;
-
-                // Enregistrer explicitement dans la table de liaison chercheur_grade
-                DB::table('chercheur_grade')->insert([
-                    'idCherch' => $chercheur->idCherch, // ID du chercheur
-                    'idGrade' => $grade->idGrade, // ID du grade, ici c'est idGrade
-                    'dateGrade' => $dateGrade, // Date d'attribution
-                ]);
-
-                // // Ajouter le grade au chercheur dans la table de liaison
-                // $chercheur->grades()->attach($grade->id, [
-                //     'dateGrade' => $dateGrade,
-                // ]);
-            }
-
-            // Valider la transaction
-            DB::commit();
-
-            // Retourner une réponse avec succès
-            return redirect()->route('admin.listeChercheurs', $chercheur->idCherch)
-                            ->with('success', 'Grade(s) ajouté(s) avec succès');
+            // Retourner un succès
+            return redirect()->route('admin.listeChercheurs')
+                ->with('success', 'Grade(s) ajouté(s) avec succès.');
         } catch (\Exception $e) {
-            // En cas d'erreur, annuler toutes les modifications
-            DB::rollBack();
-
-            // Retourner une réponse avec l'erreur
-            return redirect()->route('admin.listeChercheurs', $chercheur->idCherch)
-                            ->with('error', 'Une erreur est survenue, les grades n\'ont pas pu être ajoutés.');
+            // Gérer les erreurs
+            return redirect()->route('admin.listeChercheurs')
+                ->with('error', 'Une erreur est survenue, les grades n\'ont pas pu être ajoutés.');
         }
     }
-
-
-
-
 
 
     public function edit($id)
@@ -189,7 +164,6 @@ class LaboChercheurController extends Controller
         }
     }
 
-
     public function update(Request $request, $idCherch)
     {
         // Validation des données avec messages personnalisés
@@ -200,54 +174,66 @@ class LaboChercheurController extends Controller
             'telCherch' => 'nullable|regex:/^[0-9]{10}$/', // 10 chiffres pour un numéro de téléphone
             'emailCherch' => 'required|email|max:255|unique:chercheurs,emailCherch,' . $idCherch . ',idCherch',
             'specialite' => 'nullable|string|max:255',
-            'idLabo' => 'required|exists:laboratoires,idLabo', // Vérifie si le laboratoire existe
+            'idLabo' => 'nullable',
             'password' => 'nullable|min:8|confirmed', // Mot de passe facultatif
+            'grades' => 'nullable|array', // Grades facultatifs
+            'dates' => 'nullable|array', // Dates facultatives
+            'dates.*' => 'nullable|date',
         ], [
             'nomCherch.required' => 'Le nom du chercheur est obligatoire.',
-            'nomCherch.max' => 'Le nom du chercheur ne peut pas dépasser 255 caractères.',
-
-            'prenomCherch.max' => 'Le prénom du chercheur ne peut pas dépasser 255 caractères.',
-
-            'adresse.max' => 'L\'adresse ne peut pas dépasser 255 caractères.',
-
-            'telCherch.regex' => 'Le numéro de téléphone doit contenir exactement 10 chiffres.',
-
             'emailCherch.required' => 'L\'email du chercheur est obligatoire.',
-            'emailCherch.email' => 'Veuillez entrer une adresse email valide.',
-            'emailCherch.unique' => 'Cette adresse email est déjà utilisée par un autre chercheur.',
-
-            'specialite.max' => 'La spécialité ne peut pas dépasser 255 caractères.',
-
-            'idLabo.required' => 'Le laboratoire est obligatoire.',
-            'idLabo.exists' => 'Le laboratoire sélectionné est invalide.',
-
-            'password.min' => 'Le mot de passe doit contenir au moins 8 caractères.',
             'password.confirmed' => 'La confirmation du mot de passe ne correspond pas.',
         ]);
 
-        // Recherche du chercheur à modifier
-        $chercheur = Chercheur::findOrFail($idCherch);
+        try {
+            // Recherche du chercheur à modifier
+            $chercheur = Chercheur::findOrFail($idCherch);
 
-        // Mise à jour des données
-        $chercheur->nomCherch = $validated['nomCherch'];
-        $chercheur->prenomCherch = $validated['prenomCherch'] ?? $chercheur->prenomCherch;
-        $chercheur->adresse = $validated['adresse'] ?? $chercheur->adresse;
-        $chercheur->telCherch = $validated['telCherch'] ?? $chercheur->telCherch;
-        $chercheur->emailCherch = $validated['emailCherch'];
-        $chercheur->specialite = $validated['specialite'] ?? $chercheur->specialite;
-        $chercheur->idLabo = $validated['idLabo'];
+            // Mise à jour des données du chercheur
+            $chercheur->nomCherch = $validated['nomCherch'];
+            $chercheur->prenomCherch = $validated['prenomCherch'] ?? $chercheur->prenomCherch;
+            $chercheur->adresse = $validated['adresse'] ?? $chercheur->adresse;
+            $chercheur->telCherch = $validated['telCherch'] ?? $chercheur->telCherch;
+            $chercheur->emailCherch = $validated['emailCherch'];
+            $chercheur->specialite = $validated['specialite'] ?? $chercheur->specialite;
 
-        // Mise à jour du mot de passe uniquement si un nouveau mot de passe est fourni
-        if (!empty($validated['password'])) {
-            $chercheur->password = bcrypt($validated['password']); // Hachage du mot de passe
+            // Mise à jour de la relation avec le laboratoire (nullable)
+            $chercheur->idLabo = $validated['idLabo'] ?? null;
+
+            // Gestion des grades et des dates d'obtention
+            if (isset($validated['grades']) && is_array($validated['grades'])) {
+                // Préparer les données pour `sync` avec les dates
+                $gradesWithDates = [];
+                foreach ($validated['grades'] as $gradeId) {
+                    $gradesWithDates[$gradeId] = [
+                        'dateGrade' => $validated['dates'][$gradeId] ?? null,
+                    ];
+                }
+
+                // Synchroniser la relation grades avec la table pivot
+                $chercheur->grades()->sync($gradesWithDates);
+            } else {
+                // Si aucun grade n'est fourni, désynchroniser tous les grades
+                $chercheur->grades()->detach();
+            }
+
+            // Mise à jour du mot de passe uniquement si un nouveau mot de passe est fourni
+            if (!empty($validated['password'])) {
+                $chercheur->password = bcrypt($validated['password']); // Hachage du mot de passe
+            }
+
+            // Sauvegarde des modifications
+            $chercheur->save();
+
+            // Redirection avec un message de succès
+            return redirect()->route('admin.listeChercheurs')->with('success', 'Le chercheur a été mis à jour avec succès.');
+
+        } catch (\Exception $e) {
+            // Gestion des erreurs
+            return redirect()->route('admin.listeChercheurs')->with('error', 'Une erreur est survenue lors de la mise à jour : ' . $e->getMessage());
         }
-
-        // Sauvegarde des modifications
-        $chercheur->save();
-
-        // Redirection avec un message de succès
-        return redirect()->route('admin.listeChercheurs')->with('success', 'Le chercheur a été mis à jour avec succès.');
     }
+
 
 
 

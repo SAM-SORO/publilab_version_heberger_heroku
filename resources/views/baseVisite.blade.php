@@ -14,8 +14,8 @@
     <link rel="stylesheet" href="{{ mix('assets/css/bootstrap.min.css') }}">
 
     <!-- Favicon -->
-    <link rel="icon" href="{{ mix('assets/img/favicon.ico') }}" sizes="any" type="image/x-icon">
-    <link rel="apple-touch-icon" href="{{ mix('assets/img/apple-touch-icon.png') }}">
+    <link rel="icon" href="{{ asset('assets/img/favicon.ico') }}" sizes="any" type="image/x-icon">
+    <link rel="apple-touch-icon" href="{{ asset('assets/img/apple-touch-icon.png') }}">
 
 
     <style>

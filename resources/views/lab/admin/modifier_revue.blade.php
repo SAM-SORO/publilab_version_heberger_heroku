@@ -86,16 +86,16 @@
         <div class="form-group mb-4">
             <label for="typeRevue">Type de la Revue</label>
             <input type="text" class="form-control @error('typeRevue') is-invalid @enderror"
-                   id="typeRevue" name="typeRevue" value="{{ old('typeRevue', $revue->typeRevue) }}" required>
+                   id="typeRevue" name="typeRevue" value="{{ old('typeRevue', $revue->typeRevue) }}">
             @error('typeRevue')
                 <span class="invalid-feedback">{{ $message }}</span>
             @enderror
         </div>
 
-        <!-- Base d'indexation -->
+        <!-- Base d'Indexation -->
         <div class="form-group mb-4">
             <label for="bdIndexation">Base d'Indexation</label>
-            <select id="bdIndexation" name="bdIndexation[]" class="form-control @error('bdIndexation') is-invalid @enderror">
+            <select id="bdIndexation" name="bdIndexation[]" class="form-control @error('bdIndexation') is-invalid @enderror" multiple>
                 @foreach ($bdIndexations as $bdIndexation)
                     <option value="{{ $bdIndexation->idBDIndex }}"
                         {{ in_array($bdIndexation->idBDIndex, old('bdIndexation', $revue->bdIndexations->pluck('idBDIndex')->toArray())) ? 'selected' : '' }}>
@@ -108,48 +108,85 @@
             @enderror
         </div>
 
-        <!-- Date de début -->
-        <div class="form-group mb-4">
-            <label for="dateDebut">Date de début</label>
-            <input type="date" class="form-control @error('dateDebut') is-invalid @enderror"
-                   id="dateDebut" name="dateDebut"
-                   value="{{ old('dateDebut', $revue->bdIndexations->first() ? $revue->bdIndexations->first()->pivot->dateDebut : '') }}">
-            @error('dateDebut')
-                <span class="invalid-feedback">{{ $message }}</span>
-            @enderror
-        </div>
+        <!-- Container pour les dates -->
+        <div id="dates-container" class="mt-4">
+            @foreach ($revue->bdIndexations as $bdIndexation)
+                <div class="form-group mb-3 date-group" data-bdindex-id="{{ $bdIndexation->idBDIndex }}">
 
-        <!-- Date de fin -->
-        <div class="form-group mb-4">
-            <label for="dateFin">Date de fin</label>
-            <input type="date" class="form-control @error('dateFin') is-invalid @enderror"
-                   id="dateFin" name="dateFin"
-                   value="{{ old('dateFin', $revue->bdIndexations->first() ? $revue->bdIndexations->first()->pivot->dateFin : '') }}">
-            @error('dateFin')
-                <span class="invalid-feedback">{{ $message }}</span>
-            @enderror
+                    <label for="dateDebut_{{ $bdIndexation->idBDIndex }}">Date de début pour {{ $bdIndexation->nomBDInd }}</label>
+                    <input type="date" class="form-control" id="dateDebut_{{ $bdIndexation->idBDIndex }}" name="dateDebut[{{ $bdIndexation->idBDIndex }}]"
+                           value="{{ old('dateDebut.' . $bdIndexation->idBDIndex, $bdIndexation->pivot->dateDebut) }}">
+
+                    <label for="dateFin_{{ $bdIndexation->idBDIndex }}">Date de fin pour {{ $bdIndexation->nomBDInd }}</label>
+                    <input type="date" class="form-control" id="dateFin_{{ $bdIndexation->idBDIndex }}" name="dateFin[{{ $bdIndexation->idBDIndex }}]"
+                           value="{{ old('dateFin.' . $bdIndexation->idBDIndex, $bdIndexation->pivot->dateFin) }}">
+                </div>
+
+            @endforeach
         </div>
 
         <!-- Bouton de soumission -->
         <div class="form-group mb-4 text-center">
-            <button type="submit" class="btn btn-primary">
+            <button type="submit" class="btn btn-primary mt-5">
                 <i class="fas fa-save"></i> Sauvegarder les modifications
             </button>
         </div>
     </form>
 
-</div>
-@endsection
+    @section('scripts')
+        <script>
+            $(document).ready(function() {
+                // Initialisation de Select2
+                $('#bdIndexation').select2({
+                    placeholder: "Sélectionnez une ou plusieurs bases d'indexation",
+                    width: '100%'
+                });
 
-@section('scripts')
-<script>
-    $(document).ready(function() {
-        $('#bdIndexation').select2({
-            placeholder: 'Sélectionnez une base d\'indexation',
-            allowClear: true,
-            maximumSelectionLength: 1,
-            width: '100%'
-        });
-    });
-</script>
+                // Dynamiser l'ajout des champs de date pour chaque base d'indexation sélectionnée
+                $('#bdIndexation').on('change', function () {
+                    const selectedIndexations = $(this).val(); // Récupérer les bases d'indexation sélectionnées
+                    const datesContainer = $('#dates-container');
+
+                    // Parcourir les bases sélectionnées et ajouter les champs si nécessaires
+                    selectedIndexations.forEach(function (bdIndexId) {
+                        const bdIndexationName = $('#bdIndexation option[value="' + bdIndexId + '"]').text();
+                        const existingDateGroup = datesContainer.find(`.date-group[data-bdindex-id="${bdIndexId}"]`);
+
+                        // Si ce groupe de date n'existe pas déjà, en créer un nouveau
+                        if (existingDateGroup.length === 0) {
+                            const dateDebutValue = existingDateGroup.find(`input[name="dateDebut[${bdIndexId}]"]`).val() || '';
+                            const dateFinValue = existingDateGroup.find(`input[name="dateFin[${bdIndexId}]"]`).val() || '';
+
+                            const dateFields = `
+                                <div class="form-group mb-3 date-group" data-bdindex-id="${bdIndexId}">
+                                    <label>Date de début pour ${bdIndexationName}</label>
+                                    <input type="date" class="form-control" name="dateDebut[${bdIndexId}]" value="${dateDebutValue}">
+
+                                    <label>Date de fin pour ${bdIndexationName}</label>
+                                    <input type="date" class="form-control" name="dateFin[${bdIndexId}]" value="${dateFinValue}">
+                                </div>
+                            `;
+                            datesContainer.append(dateFields);
+                        }
+                    });
+
+                    // Supprimer les groupes de date pour les bases non sélectionnées
+                    datesContainer.find('.date-group').each(function() {
+                        const groupId = $(this).data('bdindex-id');
+                        if (!selectedIndexations.includes(String(groupId))) {
+                            $(this).remove();
+                        }
+                    });
+                });
+
+                // Si des bases sont déjà sélectionnées au chargement, afficher les dates
+                const selectedIndexations = $('#bdIndexation').val();
+                if (selectedIndexations.length > 0) {
+                    $('#bdIndexation').trigger('change');
+                }
+            });
+
+        </script>
+    @endsection
+
 @endsection

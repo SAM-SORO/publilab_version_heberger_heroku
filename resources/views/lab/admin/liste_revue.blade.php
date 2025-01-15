@@ -92,23 +92,32 @@
                                     <ul class="list-unstyled">
                                         @foreach ($revue->bdIndexations as $bdIndexation)
                                             <li>
-                                                {{ $bdIndexation->nomBDInd }}
-                                                ( date de debut: {{ \Carbon\Carbon::parse
-                                                ($bdIndexation->pivot->dateDebut)->format('d-m-y') }} /
-                                                date de fin : {{ \Carbon\Carbon::parse
-                                                ($bdIndexation->pivot->dateFin)->format('d-m-y') }})
+                                                - {{$bdIndexation->nomBDInd }}
+                                                @if ($bdIndexation->pivot->dateDebut)
+                                                    (
+                                                        date de début : {{ \Carbon\Carbon::parse($bdIndexation->pivot->dateDebut)->format('d-m-y') }}
+
+                                                        @if ($bdIndexation->pivot->dateFin)
+                                                            / date de fin : {{ \Carbon\Carbon::parse($bdIndexation->pivot->dateFin)->format('d-m-y') }}
+                                                        @endif
+
+                                                    )
+                                                @endif
+
+
                                             </li>
                                         @endforeach
                                     </ul>
                                 </p>
                             @endif
+
                         </div>
                         <div class="card-footer d-flex justify-content-end">
                             <form action="{{ route('admin.modifierRevue', $revue->idRevue) }}" method="GET">
                                 @csrf
                                 <button class="btn btn-primary mr-2">Modifier</button>
                             </form>
-                            
+
                             <form id="deleteRevueForm" action="{{ route('admin.supprimerRevue', $revue->idRevue) }}" method="POST" style="display: inline;">
                                 @csrf
                                 @method('POST')  <!-- Utilisation de la méthode POST -->
@@ -131,9 +140,8 @@
 </div>
 
 <!-- Modal pour enregistrer une revue -->
-<!-- Modal pour enregistrer une revue -->
 <div class="modal fade" id="addRevueModal" tabindex="-1" aria-labelledby="addRevueModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
+    <div class="modal-dialog modal-lg">
         <form action="{{ route('admin.enregistrerRevue') }}" method="POST">
             @csrf
             <div class="modal-content">
@@ -145,43 +153,84 @@
                 </div>
                 <div class="modal-body">
                     <div class="form-group">
-                        <label for="ISSN">ISSN <span class="text-danger">*</span></label>
-                        <input type="text" class="form-control" id="ISSN" name="ISSN" required>
-                    </div>
-                    <div class="form-group">
                         <label for="nomRevue">Nom de la Revue <span class="text-danger">*</span></label>
-                        <input type="text" class="form-control" id="nomRevue" name="nomRevue" required>
+                        <input type="text" class="form-control @error('nomRevue') is-invalid @enderror"
+                               id="nomRevue" name="nomRevue" value="{{ old('nomRevue') }}" required>
+                        @error('nomRevue')
+                            <span class="invalid-feedback">{{ $message }}</span>
+                        @enderror
                     </div>
+
+                    <div class="form-group">
+                        <label for="ISSN">ISSN</label>
+                        <input type="text" class="form-control @error('ISSN') is-invalid @enderror"
+                               id="ISSN" name="ISSN" value="{{ old('ISSN') }}">
+                        @error('ISSN')
+                            <span class="invalid-feedback">{{ $message }}</span>
+                        @enderror
+                    </div>
+
                     <div class="form-group">
                         <label for="descRevue">Description</label>
-                        <textarea class="form-control" id="descRevue" name="descRevue"></textarea>
+                        <textarea class="form-control @error('descRevue') is-invalid @enderror"
+                                  id="descRevue" name="descRevue">{{ old('descRevue') }}</textarea>
+                        @error('descRevue')
+                            <span class="invalid-feedback">{{ $message }}</span>
+                        @enderror
                     </div>
+
                     <div class="form-group">
                         <label for="typeRevue">Type de la Revue</label>
-                        <input type="text" class="form-control" id="typeRevue" name="typeRevue">
+                        <input type="text" class="form-control @error('typeRevue') is-invalid @enderror"
+                               id="typeRevue" name="typeRevue" value="{{ old('typeRevue') }}">
+                        @error('typeRevue')
+                            <span class="invalid-feedback">{{ $message }}</span>
+                        @enderror
                     </div>
 
                     <!-- Sélection de la base d'indexation -->
                     <div class="form-group">
                         <label for="bdIndexation">Base d'Indexation</label>
-                        <select class="form-control" id="bdIndexation" name="bdIndexation[]" multiple>
+                        <select class="form-control @error('bdIndexation') is-invalid @enderror"
+                                id="bdIndexation" name="bdIndexation[]" multiple required>
                             @foreach ($bdIndexations as $bdIndexation)
-                                <option value="{{ $bdIndexation->idBDIndex }}">{{ $bdIndexation->nomBDInd }}</option>
+                                <option value="{{ $bdIndexation->idBDIndex }}"
+                                        {{ in_array($bdIndexation->idBDIndex, old('bdIndexation', [])) ? 'selected' : '' }}>
+                                    {{ $bdIndexation->nomBDInd }}
+                                </option>
                             @endforeach
                         </select>
+                        @error('bdIndexation')
+                            <span class="invalid-feedback">{{ $message }}</span>
+                        @enderror
                     </div>
 
-                    <!-- Dates de début et de fin -->
-                    <div class="form-group">
-                        <label for="dateDebut">Date de début</label>
-                        <input type="date" class="form-control" id="dateDebut" name="dateDebut">
+                    <!-- Conteneur pour les champs de dates -->
+                    <div id="indexationDatesContainer">
+                        <!-- Gestion des anciennes valeurs -->
+                        @if(old('dateDebut') && old('dateFin'))
+                            @foreach(old('dateDebut') as $index => $dateDebut)
+                                <div class="form-group">
+                                    <label>Date de début</label>
+                                    <input type="date" class="form-control @error('dateDebut.' . $index) is-invalid @enderror"
+                                           name="dateDebut[]" value="{{ $dateDebut }}">
+                                    @error('dateDebut.' . $index)
+                                        <span class="invalid-feedback">{{ $message }}</span>
+                                    @enderror
+                                </div>
+                                <div class="form-group">
+                                    <label>Date de fin</label>
+                                    <input type="date" class="form-control @error('dateFin.' . $index) is-invalid @enderror"
+                                           name="dateFin[]" value="{{ old('dateFin')[$index] }}">
+                                    @error('dateFin.' . $index)
+                                        <span class="invalid-feedback">{{ $message }}</span>
+                                    @enderror
+                                </div>
+                            @endforeach
+                        @endif
                     </div>
-                    <div class="form-group">
-                        <label for="dateFin">Date de fin</label>
-                        <input type="date" class="form-control" id="dateFin" name="dateFin">
-                    </div>
-
                 </div>
+
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-dismiss="modal">Annuler</button>
                     <button type="submit" class="btn btn-primary">Enregistrer</button>
@@ -192,44 +241,64 @@
 </div>
 
 
-@endsection
-
-
 @section('scripts')
+    <script>
+        $(document).ready(function() {
 
-<script>
-    $(document).ready(function() {
+            $('#bdIndexation').select2({
+                placeholder: 'Sélectionnez une base d\'indexation',
+                allowClear: true,
+                width: '100%' // Ajuste la largeur pour un affichage responsive
+            });
 
-        $('#bdIndexation').select2({
-            placeholder: 'Sélectionnez une base d\'indexation',
-            allowClear: true,
-            maximumSelectionLength: 1, // Limite la sélection à une seule option
-            width: '100%' // Ajuste la largeur pour un affichage responsive
+            // Écouter les changements sur le champ des bases d'indexation
+            $('#bdIndexation').on('change', function () {
+                const selectedOptions = $(this).find('option:selected'); // Options sélectionnées
+                const container = $('#indexationDatesContainer');
+                container.empty(); // Vider le conteneur
+
+                selectedOptions.each(function () {
+                    const baseName = $(this).text(); // Texte de l'option
+                    const id = $(this).val(); // Valeur de l'option (ID)
+
+                    // Ajouter les champs dynamiques avec le nom de la base
+                    container.append(`
+                        <div class="form-group">
+                            <label>Date de début pour la base "${baseName}"</label>
+                            <input type="date" class="form-control" name="dateDebut[]">
+                        </div>
+                        <div class="form-group">
+                            <label>Date de fin pour la base "${baseName}"</label>
+                            <input type="date" class="form-control" name="dateFin[]">
+                        </div>
+                    `);
+                });
+            });
         });
 
-    });
 
-    function confirmDelete() {
-        Swal.fire({
-            title: "Êtes-vous sûr de vouloir supprimer cette revue ?",
-            icon: "warning",
-            showCancelButton: true,
-            confirmButtonColor: "#3085d6",
-            cancelButtonColor: "#d33",
-            confirmButtonText: "Oui, Supprimer !",
-            cancelButtonText: "Annuler"
-        }).then((result) => {
-            if (result.isConfirmed) {
-                // Soumettre le formulaire après confirmation
-                // Trouver le formulaire en fonction de l'ID de la revue
-                const form = document.getElementById('deleteRevueForm');
-                // Soumettre le formulaire
-                form.submit();
-            }
-        });
-    }
 
-</script>
+        function confirmDelete() {
+            Swal.fire({
+                title: "Êtes-vous sûr de vouloir supprimer cette revue ?",
+                icon: "warning",
+                showCancelButton: true,
+                confirmButtonColor: "#3085d6",
+                cancelButtonColor: "#d33",
+                confirmButtonText: "Oui, Supprimer !",
+                cancelButtonText: "Annuler"
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    // Soumettre le formulaire après confirmation
+                    // Trouver le formulaire en fonction de l'ID de la revue
+                    const form = document.getElementById('deleteRevueForm');
+                    // Soumettre le formulaire
+                    form.submit();
+                }
+            });
+        }
 
+    </script>
+@endsection
 
 @endsection
