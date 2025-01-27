@@ -69,6 +69,9 @@
         <div class="alert alert-info" role="alert">
             Aucune revue disponible.
         </div>
+        <div class="d-flex justify-content-center">
+            <img src="{{ asset('assets/img/empty_data.png') }}" alt="aucun article" class="img-fluid" style="width: 350px; height: 350px;">
+        </div>
     @else
         <div class="row row-cols-1 row-cols-md-2 g-4">
             @foreach ($revues as $revue)

@@ -57,7 +57,9 @@ class VisiteurController extends Controller
                                                 $revueQuery->where('nomRevue', 'like', '%' . $restQuery . '%');
                                             })
                                             ->orWhereHas('chercheurs', function ($chercheurQuery) use ($restQuery) {
-                                                $chercheurQuery->where('prenomCherch', 'like', '%' . $restQuery . '%')
+                                                // Recherche dans le nom et le prénom combinés
+                                                $chercheurQuery->whereRaw("CONCAT(nomCherch, ' ', prenomCherch) LIKE ?", ['%' . $restQuery . '%'])
+                                                                ->orWhere('prenomCherch', 'like', '%' . $restQuery . '%')
                                                                 ->orWhere('nomCherch', 'like', '%' . $restQuery . '%');
                                             });
                                 });
@@ -69,7 +71,9 @@ class VisiteurController extends Controller
                                     $revueQuery->where('nomRevue', 'like', '%' . $query . '%');
                                 })
                                 ->orWhereHas('chercheurs', function ($chercheurQuery) use ($query) {
-                                    $chercheurQuery->where('prenomCherch', 'like', '%' . $query . '%')
+                                    // Recherche dans le nom et prénom
+                                    $chercheurQuery->whereRaw("CONCAT(nomCherch, ' ', prenomCherch) LIKE ?", ['%' . $query . '%'])
+                                                    ->orWhere('prenomCherch', 'like', '%' . $query . '%')
                                                     ->orWhere('nomCherch', 'like', '%' . $query . '%');
                                 });
                 }
@@ -90,7 +94,6 @@ class VisiteurController extends Controller
 
         return view('lab.visiteur.articles', compact('articles', 'annees', 'revues', 'query', 'annee'));
     }
-
 
 
     public function Articles()
