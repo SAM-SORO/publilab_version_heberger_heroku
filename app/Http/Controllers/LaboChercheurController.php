@@ -41,7 +41,7 @@ class LaboChercheurController extends Controller
             'emailCherch' => 'required|email|unique:chercheurs,emailCherch',
             'password' => 'required|string|min:6',
             'password_confirmation' => 'required|same:password',
-            'idLabo' => 'required|exists:laboratoires,idLabo',
+            'idLabo' => 'required',
             'dateArrivee' => 'nullable|date',
             'adresse' => 'nullable|string|max:255',
             'telCherch' => 'nullable|regex:/^[0-9]{10,}$/',
@@ -64,7 +64,6 @@ class LaboChercheurController extends Controller
             'password_confirmation.same' => 'La confirmation du mot de passe ne correspond pas.',
 
             'idLabo.required' => 'Le laboratoire est obligatoire.',
-            'idLabo.exists' => 'Le laboratoire sélectionné n\'existe pas.',
 
             'telCherch.required' => 'Le numéro de téléphone est obligatoire.',
             'telCherch.regex' => 'Le numéro de téléphone doit comporter au moins 10 chiffres.',
@@ -245,22 +244,28 @@ class LaboChercheurController extends Controller
         // Effectuer la recherche dans la table 'chercheurs'
         $chercheurs = Chercheur::query()
             ->when($query, function ($queryBuilder) use ($query) {
-                // Recherche sur les champs 'nomCherch', 'prenomCherch', et 'nomLabo'
-                $queryBuilder->where('nomCherch', 'like', '%' . $query . '%')
-                             ->where('prenomCherch', 'like', '%' . $query . '%')
-                             ->orWhere('prenomCherch', 'like', '%' . $query . '%')
-                             ->orWhereHas('laboratoire', function ($queryBuilder) use ($query) {
-                                 $queryBuilder->where('nomLabo', 'like', '%' . $query . '%');
-                             });
-            })
-            ->paginate(10);  // Pagination des résultats
+                // Diviser la requête en mots-clés (pour gérer "nom et prénom")
+                $keywords = explode(' ', $query);
 
-        $grades = Grade::all();  // Récupérer tous les grades disponibles
-        $laboratoires = Laboratoire::all();  // Récupérer tous les laboratoires disponibles
+                $queryBuilder->where(function ($subQuery) use ($keywords) {
+                    foreach ($keywords as $keyword) {
+                        $subQuery->orWhere('nomCherch', 'like', '%' . $keyword . '%')
+                                ->orWhere('prenomCherch', 'like', '%' . $keyword . '%');
+                    }
+                });
+            })
+            ->orWhereHas('laboratoire', function ($queryBuilder) use ($query) {
+                $queryBuilder->where('nomLabo', 'like', '%' . $query . '%');
+            })
+            ->paginate(10); // Pagination des résultats
+
+        $grades = Grade::all(); // Récupérer tous les grades disponibles
+        $laboratoires = Laboratoire::all(); // Récupérer tous les laboratoires disponibles
 
         // Retourner la vue avec les résultats
-        return view('lab.admin.liste_chercheur', compact('chercheurs', 'query','grades', 'laboratoires'));
+        return view('lab.admin.liste_chercheur', compact('chercheurs', 'query', 'grades', 'laboratoires'));
     }
+
 
 
     public function delete($id)

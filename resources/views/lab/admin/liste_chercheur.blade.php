@@ -120,7 +120,7 @@
                             <div class="mx-2">
                                 <button type="button" class="btn btn-success" data-toggle="modal" data-target="#ajouterGradeModal"
                                     data-id="{{ $chercheur->idCherch }}"
-                                    data-nom="{{ $chercheur->prenomCherch }} {{ $chercheur->nomCherch }}">
+                                    data-nom="{{ $chercheur->nomCherch }} {{ $chercheur->prenomCherch }}">
                                     <i class="fas fa-plus"></i> Grade
                                 </button>
                             </div>
@@ -253,7 +253,7 @@
                     <!-- Laboratoire -->
                     <div class="form-group mb-4">
                         <label for="idLabo">Laboratoire <span class="text-danger">*</span></label>
-                        <select class="form-control @error('idLabo') is-invalid @enderror" id="idLabo" name="idLabo" required>
+                        <select class="form-control @error('idLabo') is-invalid @enderror" id="idLabo" name="idLabo" multiple required>
                             <option value="" disabled {{ old('idLabo') ? '' : 'selected' }}>-- Sélectionnez un Laboratoire --</option>
                             @foreach ($laboratoires as $labo)
                                 <option value="{{ $labo->idLabo }}" {{ old('idLabo') == $labo->idLabo ? 'selected' : '' }}>
@@ -287,7 +287,7 @@
 
 <!-- Modal pour Attribuer les Grades -->
 <div class="modal fade" id="ajouterGradeModal" tabindex="-1" role="dialog" aria-labelledby="ajouterGradeModalLabel" aria-hidden="true">
-    <div class="modal-dialog" role="document">
+    <div class="modal-dialog modal-lg" role="document">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title" id="ajouterGradeModalLabel">Attribuer des Grades</h5>
@@ -339,6 +339,12 @@
             placeholder: "Sélectionnez les grades",
             allowClear: true,
             width: '100%' // Adaptation responsive
+        });
+
+        $('#idLabo').select2({
+            allowClear: true,
+            maximumSelectionLength: 1, // Limite la sélection à une seule option
+            width: '100%' // Ajuste la largeur pour un affichage responsive
         });
 
         // Dynamiser l'ajout des champs de date pour chaque grade sélectionné

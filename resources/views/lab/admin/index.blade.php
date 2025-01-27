@@ -16,8 +16,8 @@
                     </div>
                     <div class="col-6">
                         <div class="shadow p-5 rounded bg-white">
-                            <h5 class="text-danger">Nombre de visiteurs</h5>
-                            <a href="#"><h2 class="text-center">{{ $nombreVisiteurs }}</h2></a>
+                            <h5 class="text-danger">Nombre d'artilces</h5>
+                            <a href="#"><h2 class="text-center">{{ $nombreArticles}}</h2></a>
                         </div>
                     </div>
                 </div>
