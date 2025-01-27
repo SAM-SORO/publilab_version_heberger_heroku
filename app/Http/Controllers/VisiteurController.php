@@ -24,7 +24,7 @@ class VisiteurController extends Controller
     //on ne va pas faire la recherche ici en fonction du chercheur connecter
     public function rechercherEtFiltrerArticles(Request $request)
     {
-        $query = $request->input('query'); // Recherche texte
+        $query = trim($request->input('query')); // Recherche texte
         $annee = $request->input('annee'); // Année sélectionnée
 
         // Base de la requête
@@ -40,21 +40,39 @@ class VisiteurController extends Controller
         // Ajouter la recherche par mot-clé (titre, résumé, revue)
         if ($query) {
             $articlesQuery->where(function ($queryBuilder) use ($query) {
-                $queryBuilder->where('titreArticle', 'like', '%' . $query . '%')
-                            ->orWhere('resumeArticle', 'like', '%' . $query . '%')
-                            ->orWhereHas('revues', function ($revueQuery) use ($query) {
-                                $revueQuery->where('nomRevue', 'like', '%' . $query . '%');
-                            })
-                            // Recherche par prénom ou nom des chercheurs
-                            ->orWhereHas('chercheurs', function ($chercheurQuery) use ($query) {
-                                $chercheurQuery->where('prenomCherch', 'like', '%' . $query . '%')
-                                            ->orWhere('nomCherch', 'like', '%' . $query . '%');
-                            })
-                            // Recherche par prénom ou nom des doctorants
-                            ->orWhereHas('doctorants', function ($doctorantQuery) use ($query) {
-                                $doctorantQuery->where('prenomDoc', 'like', '%' . $query . '%')
-                                            ->orWhere('nomDoc', 'like', '%' . $query . '%');
-                            });
+                // Diviser la requête en mots-clés (chaque mot ou groupe de mots)
+                $keywords = explode(' ', $query);
+
+                if (count($keywords) > 1) {
+                    // Si plusieurs mots sont saisis, chercher dans les champs pertinents
+                    $title = $keywords[0]; // Premier mot comme titre
+                    $restQuery = implode(' ', array_slice($keywords, 1)); // Le reste comme autre critère de recherche
+
+                    // Recherche dans le titre de l'article et dans les autres champs
+                    $queryBuilder->where('titreArticle', 'like', '%' . $title . '%')
+                                ->where(function ($subQuery) use ($restQuery) {
+                                    // Recherche supplémentaire dans les autres champs
+                                    $subQuery->where('resumeArticle', 'like', '%' . $restQuery . '%')
+                                            ->orWhereHas('revues', function ($revueQuery) use ($restQuery) {
+                                                $revueQuery->where('nomRevue', 'like', '%' . $restQuery . '%');
+                                            })
+                                            ->orWhereHas('chercheurs', function ($chercheurQuery) use ($restQuery) {
+                                                $chercheurQuery->where('prenomCherch', 'like', '%' . $restQuery . '%')
+                                                                ->orWhere('nomCherch', 'like', '%' . $restQuery . '%');
+                                            });
+                                });
+                } else {
+                    // Si un seul mot est saisi, rechercher dans tous les champs
+                    $queryBuilder->where('titreArticle', 'like', '%' . $query . '%')
+                                ->orWhere('resumeArticle', 'like', '%' . $query . '%')
+                                ->orWhereHas('revues', function ($revueQuery) use ($query) {
+                                    $revueQuery->where('nomRevue', 'like', '%' . $query . '%');
+                                })
+                                ->orWhereHas('chercheurs', function ($chercheurQuery) use ($query) {
+                                    $chercheurQuery->where('prenomCherch', 'like', '%' . $query . '%')
+                                                    ->orWhere('nomCherch', 'like', '%' . $query . '%');
+                                });
+                }
             });
         }
 

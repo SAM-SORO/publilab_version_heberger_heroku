@@ -254,7 +254,6 @@
                     <div class="form-group mb-4">
                         <label for="idLabo">Laboratoire <span class="text-danger">*</span></label>
                         <select class="form-control @error('idLabo') is-invalid @enderror" id="idLabo" name="idLabo" multiple required>
-                            <option value="" disabled {{ old('idLabo') ? '' : 'selected' }}>-- Sélectionnez un Laboratoire --</option>
                             @foreach ($laboratoires as $labo)
                                 <option value="{{ $labo->idLabo }}" {{ old('idLabo') == $labo->idLabo ? 'selected' : '' }}>
                                     {{ $labo->nomLabo }}

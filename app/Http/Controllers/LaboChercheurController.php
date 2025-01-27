@@ -239,20 +239,26 @@ class LaboChercheurController extends Controller
     public function search(Request $request)
     {
         // Récupérer la requête de recherche
-        $query = $request->input('query');
+        $query = trim($request->input('query'));
 
         // Effectuer la recherche dans la table 'chercheurs'
         $chercheurs = Chercheur::query()
             ->when($query, function ($queryBuilder) use ($query) {
-                // Diviser la requête en mots-clés (pour gérer "nom et prénom")
+                // Diviser la requête en mots-clés (chaque mot ou groupe de mots)
                 $keywords = explode(' ', $query);
 
-                $queryBuilder->where(function ($subQuery) use ($keywords) {
-                    foreach ($keywords as $keyword) {
-                        $subQuery->orWhere('nomCherch', 'like', '%' . $keyword . '%')
-                                ->orWhere('prenomCherch', 'like', '%' . $keyword . '%');
-                    }
-                });
+                if (count($keywords) > 1) {
+                    // Si plusieurs mots sont saisis, chercher par nom et prénom combinés
+                    $nom = $keywords[0]; // Premier mot comme nom
+                    $prenom = implode(' ', array_slice($keywords, 1)); // Le reste comme prénom
+
+                    $queryBuilder->where('nomCherch', 'like', '%' . $nom . '%')
+                                ->where('prenomCherch', 'like', '%' . $prenom . '%');
+                } else {
+                    // Si un seul mot est saisi, chercher par nom ou prénom
+                    $queryBuilder->where('nomCherch', 'like', '%' . $query . '%')
+                                ->orWhere('prenomCherch', 'like', '%' . $query . '%');
+                }
             })
             ->orWhereHas('laboratoire', function ($queryBuilder) use ($query) {
                 $queryBuilder->where('nomLabo', 'like', '%' . $query . '%');
@@ -265,6 +271,7 @@ class LaboChercheurController extends Controller
         // Retourner la vue avec les résultats
         return view('lab.admin.liste_chercheur', compact('chercheurs', 'query', 'grades', 'laboratoires'));
     }
+
 
 
 
