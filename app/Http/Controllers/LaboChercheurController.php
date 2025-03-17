@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use App\Models\Chercheur;
 use App\Models\Grade;
 use App\Models\Laboratoire;
+use App\Models\UMRI;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 
@@ -16,7 +17,7 @@ class LaboChercheurController extends Controller
     public function index()
     {
         // Récupérer les chercheurs avec leurs grades et leur laboratoire associés, triés par date de création en ordre décroissant
-        $chercheurs = Chercheur::with('grades', 'laboratoire')
+        $chercheurs = Chercheur::with(['grades', 'laboratoires', 'umri'])
             ->orderByDesc('created_at') // Tri par date de création (vous pouvez changer ce champ si nécessaire)
             ->paginate(10); // Pagination avec 10 résultats par page
 
@@ -26,73 +27,89 @@ class LaboChercheurController extends Controller
         // Récupérer tous les laboratoires disponibles
         $laboratoires = Laboratoire::all();
 
-        // Retourner la vue avec les chercheurs, grades et laboratoires
-        return view('lab.admin.liste_chercheur', compact('chercheurs', 'grades', 'laboratoires'));
+        // Récupérer tous les UMRI disponibles
+        $umris = UMRI::all();
+
+        // Retourner la vue avec les chercheurs, grades, laboratoires et UMRI
+        return view('lab.admin.liste_chercheur', compact('chercheurs', 'grades', 'laboratoires', 'umris'));
     }
 
 
 
     public function create(Request $request)
     {
-        // Validation des données avec messages personnalisés
+        // Validation des données
         $validated = $request->validate([
-            'nomCherch' => 'required|string|max:255',
-            'prenomCherch' => 'required|string|max:255',
-            'emailCherch' => 'required|email|unique:chercheurs,emailCherch',
-            'password' => 'required|string|min:6',
-            'password_confirmation' => 'required|same:password',
-            'idLabo' => 'required',
-            'dateArrivee' => 'nullable|date',
-            'adresse' => 'nullable|string|max:255',
-            'telCherch' => 'nullable|regex:/^[0-9]{10,}$/',
-            'specialite' => 'nullable|string|max:255',
+            'nomCherch' => 'required|string|max:30',
+            'prenomCherch' => 'required|string|max:100',
+            'password' => 'required|string|min:6|confirmed',
+            // Champs optionnels
+            'genreCherch' => 'nullable|in:M,F',
+            'matriculeCherch' => 'required|string|max:20',
+            'emailCherch' => 'nullable|email|unique:chercheurs,emailCherch',
+            'emploiCherch' => 'nullable|string|max:50',
+            'departementCherch' => 'nullable|string|max:100',
+            'fonctionAdministrativeCherch' => 'nullable|string|max:100',
+            'specialiteCherch' => 'nullable|string|max:50',
+            'dateNaissCherch' => 'nullable|date',
+            'dateArriveeCherch' => 'nullable|date',
+            'telCherch' => 'nullable|string|max:30',
+            'idUMRI' => 'nullable|exists:umris,idUMRI',
+            'laboratoires' => 'nullable|array',
+            'laboratoires.*' => 'exists:laboratoires,idLabo',
+            'dateAffectation' => 'nullable|array',
+            'dateAffectation.*' => 'nullable|date'
         ], [
             'nomCherch.required' => 'Le nom est obligatoire.',
-            'nomCherch.max' => 'Le nom ne doit pas dépasser 255 caractères.',
-
             'prenomCherch.required' => 'Le prénom est obligatoire.',
-            'prenomCherch.max' => 'Le prénom ne doit pas dépasser 255 caractères.',
-
-            'emailCherch.required' => 'L\'adresse email est obligatoire.',
-            'emailCherch.email' => 'L\'adresse email doit être valide.',
-            'emailCherch.unique' => 'Cette adresse email est déjà utilisée.',
-
             'password.required' => 'Le mot de passe est obligatoire.',
-            'password.min' => 'Le mot de passe doit contenir au moins 6 caractères.',
-
-            'password_confirmation.required' => 'La confirmation du mot de passe est obligatoire.',
-            'password_confirmation.same' => 'La confirmation du mot de passe ne correspond pas.',
-
-            'idLabo.required' => 'Le laboratoire est obligatoire.',
-
-            'telCherch.required' => 'Le numéro de téléphone est obligatoire.',
-            'telCherch.regex' => 'Le numéro de téléphone doit comporter au moins 10 chiffres.',
-
-            'dateArrivee.date' => 'La date d\'arrivée doit être une date valide.',
-            'adresse.max' => 'L\'adresse ne doit pas dépasser 255 caractères.',
-            'specialite.max' => 'La spécialité ne doit pas dépasser 255 caractères.',
+            'password.confirmed' => 'Les mots de passe ne correspondent pas.'
         ]);
 
-        // Hachage du mot de passe
-        $password = Hash::make($validated['password']);
+        DB::beginTransaction();
+        try {
+            // Création du chercheur avec l'UMRI
+            $chercheur = Chercheur::create([
+                'nomCherch' => $validated['nomCherch'],
+                'prenomCherch' => $validated['prenomCherch'],
+                'password' => Hash::make($validated['password']),
+                'genreCherch' => $validated['genreCherch'] ?? null,
+                'matriculeCherch' => $validated['matriculeCherch'] ?? null,
+                'emailCherch' => $validated['emailCherch'] ?? null,
+                'emploiCherch' => $validated['emploiCherch'] ?? null,
+                'departementCherch' => $validated['departementCherch'] ?? null,
+                'fonctionAdministrativeCherch' => $validated['fonctionAdministrativeCherch'] ?? null,
+                'specialiteCherch' => $validated['specialiteCherch'] ?? null,
+                'dateNaissCherch' => $validated['dateNaissCherch'] ?? null,
+                'dateArriveeCherch' => $validated['dateArriveeCherch'] ?? null,
+                'telCherch' => $validated['telCherch'] ?? null,
+                'idUMRI' => $validated['idUMRI'] ?? null
+            ]);
 
-        // Création du chercheur avec les informations de base
-        $chercheur = new Chercheur();
-        $chercheur->nomCherch = $validated['nomCherch'];
-        $chercheur->prenomCherch = $validated['prenomCherch'];
-        $chercheur->emailCherch = $validated['emailCherch'];
-        $chercheur->password = $password;
-        $chercheur->idLabo = $validated['idLabo'];
-        $chercheur->adresse = $validated['adresse'];
-        $chercheur->telCherch = $validated['telCherch'];
-        $chercheur->specialite = $validated['specialite'];
-        $chercheur->dateArrivee = $validated['dateArrivee'];
+            // Attacher les laboratoires avec leurs dates d'affectation si présents
+            if (!empty($validated['laboratoires'])) {
+                foreach ($validated['laboratoires'] as $index => $laboId) {
+                    $dateAffectation = isset($validated['dateAffectation'][$laboId])
+                        ? $validated['dateAffectation'][$laboId]
+                        : now();
 
-        // Sauvegarde du chercheur
-        $chercheur->save();
+                    $chercheur->laboratoires()->attach($laboId, [
+                        'dateAffectation' => $dateAffectation,
+                        'niveau' => $index + 1
+                    ]);
+                }
+            }
 
-        // Redirection avec un message de succès
-        return redirect()->route('admin.listeChercheurs')->with('success', 'Chercheur ajouté avec succès.');
+            DB::commit();
+            return redirect()->route('admin.listeChercheurs')
+                ->with('success', 'Chercheur ajouté avec succès.');
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return redirect()->back()
+                ->withInput()
+                ->with('error', 'Erreur lors de l\'enregistrement : ' . $e->getMessage());
+        }
     }
 
 
@@ -143,93 +160,117 @@ class LaboChercheurController extends Controller
     }
 
 
+    /**
+     * Afficher le formulaire de modification d'un chercheur
+     */
     public function edit($id)
     {
         try {
             // Récupérer le chercheur avec ses relations
-            $chercheur = Chercheur::with(['grades', 'laboratoire'])->findOrFail($id);
+            $chercheur = Chercheur::with(['grades', 'laboratoires', 'umri'])
+                ->findOrFail($id);
 
-            // Récupérer tous les grades et laboratoires pour les listes déroulantes
+            // Récupérer tous les grades, laboratoires et UMRI pour les sélecteurs
             $grades = Grade::all();
             $laboratoires = Laboratoire::all();
+            $umris = UMRI::all();
 
-            // Retourner la vue avec les données
-            return view('lab.admin.modifier_chercheur', compact('chercheur', 'grades', 'laboratoires'));
-
+            return view('lab.admin.modifier_chercheur', compact(
+                'chercheur',
+                'grades',
+                'laboratoires',
+                'umris'
+            ));
         } catch (\Exception $e) {
-            // En cas d'erreur, rediriger avec un message d'erreur
             return redirect()->route('admin.listeChercheurs')
-                            ->with('error', 'Une erreur est survenue lors de la récupération des données du chercheur.');
+                ->with('error', 'Erreur lors de la récupération du chercheur : ' . $e->getMessage());
         }
     }
 
-    public function update(Request $request, $idCherch)
+    /**
+     * Mettre à jour un chercheur
+     */
+    public function update(Request $request, $id)
     {
-        // Validation des données avec messages personnalisés
+        // Validation des données
         $validated = $request->validate([
-            'nomCherch' => 'required|string|max:255',
-            'prenomCherch' => 'nullable|string|max:255',
-            'adresse' => 'nullable|string|max:255',
-            'telCherch' => 'nullable|regex:/^[0-9]{10}$/', // 10 chiffres pour un numéro de téléphone
-            'emailCherch' => 'required|email|max:255|unique:chercheurs,emailCherch,' . $idCherch . ',idCherch',
-            'specialite' => 'nullable|string|max:255',
-            'idLabo' => 'nullable',
-            'password' => 'nullable|min:8|confirmed', // Mot de passe facultatif
-            'grades' => 'nullable|array', // Grades facultatifs
-            'dates' => 'nullable|array', // Dates facultatives
-            'dates.*' => 'nullable|date',
-        ], [
-            'nomCherch.required' => 'Le nom du chercheur est obligatoire.',
-            'emailCherch.required' => 'L\'email du chercheur est obligatoire.',
-            'password.confirmed' => 'La confirmation du mot de passe ne correspond pas.',
+            'nomCherch' => 'required|string|max:30',
+            'prenomCherch' => 'required|string|max:100',
+            'genreCherch' => 'nullable|in:M,F',
+            'matriculeCherch' => 'required|string|max:20',
+            'password' => 'nullable|string|min:6|confirmed',
+            'emploiCherch' => 'nullable|string|max:50',
+            'departementCherch' => 'nullable|string|max:100',
+            'fonctionAdministrativeCherch' => 'nullable|string|max:100',
+            'specialiteCherch' => 'nullable|string|max:50',
+            'emailCherch' => 'nullable|email|max:100|unique:chercheurs,emailCherch,'.$id.',idCherch',
+            'dateNaissCherch' => 'nullable|date',
+            'dateArriveeCherch' => 'nullable|date',
+            'telCherch' => 'nullable|string|max:30',
+            'idUMRI' => 'nullable|exists:umris,idUMRI',
+            'laboratoires' => 'nullable|array',
+            'laboratoires.*' => 'exists:laboratoires,idLabo',
+            'grades' => 'nullable|array',
+            'grades.*' => 'exists:grades,idGrade',
+            'dates' => 'nullable|array',
+            'dates.*' => 'nullable|date'
         ]);
 
+        DB::beginTransaction();
+
         try {
-            // Recherche du chercheur à modifier
-            $chercheur = Chercheur::findOrFail($idCherch);
+            $chercheur = Chercheur::findOrFail($id);
 
-            // Mise à jour des données du chercheur
+            // Mettre à jour les informations de base
             $chercheur->nomCherch = $validated['nomCherch'];
-            $chercheur->prenomCherch = $validated['prenomCherch'] ?? $chercheur->prenomCherch;
-            $chercheur->adresse = $validated['adresse'] ?? $chercheur->adresse;
-            $chercheur->telCherch = $validated['telCherch'] ?? $chercheur->telCherch;
+            $chercheur->prenomCherch = $validated['prenomCherch'];
+            $chercheur->genreCherch = $validated['genreCherch'] ?? null;
+            $chercheur->matriculeCherch = $validated['matriculeCherch'] ?? null;
+            $chercheur->emploiCherch = $validated['emploiCherch'] ?? null;
+            $chercheur->departementCherch = $validated['departementCherch'] ?? null;
+            $chercheur->fonctionAdministrativeCherch = $validated['fonctionAdministrativeCherch'] ?? null;
+            $chercheur->specialiteCherch = $validated['specialiteCherch'] ?? null;
             $chercheur->emailCherch = $validated['emailCherch'];
-            $chercheur->specialite = $validated['specialite'] ?? $chercheur->specialite;
+            $chercheur->dateNaissCherch = $validated['dateNaissCherch'] ?? null;
+            $chercheur->dateArriveeCherch = $validated['dateArriveeCherch'] ?? null;
+            $chercheur->telCherch = $validated['telCherch'] ?? null;
+            $chercheur->idUMRI = $validated['idUMRI'] ?? null;
 
-            // Mise à jour de la relation avec le laboratoire (nullable)
-            $chercheur->idLabo = $validated['idLabo'] ?? null;
+            // Mettre à jour le mot de passe si fourni
+            if (!empty($validated['password'])) {
+                $chercheur->password = Hash::make($validated['password']);
+            }
 
-            // Gestion des grades et des dates d'obtention
-            if (isset($validated['grades']) && is_array($validated['grades'])) {
-                // Préparer les données pour `sync` avec les dates
+            $chercheur->save();
+
+            // Mettre à jour les laboratoires
+            if (isset($validated['laboratoires'])) {
+                $chercheur->laboratoires()->sync($validated['laboratoires']);
+            } else {
+                $chercheur->laboratoires()->detach();
+            }
+
+            // Mettre à jour les grades avec leurs dates
+            if (isset($validated['grades'])) {
                 $gradesWithDates = [];
                 foreach ($validated['grades'] as $gradeId) {
                     $gradesWithDates[$gradeId] = [
-                        'dateGrade' => $validated['dates'][$gradeId] ?? null,
+                        'dateGrade' => $validated['dates'][$gradeId] ?? now()
                     ];
                 }
-
-                // Synchroniser la relation grades avec la table pivot
                 $chercheur->grades()->sync($gradesWithDates);
             } else {
-                // Si aucun grade n'est fourni, désynchroniser tous les grades
                 $chercheur->grades()->detach();
             }
 
-            // Mise à jour du mot de passe uniquement si un nouveau mot de passe est fourni
-            if (!empty($validated['password'])) {
-                $chercheur->password = bcrypt($validated['password']); // Hachage du mot de passe
-            }
-
-            // Sauvegarde des modifications
-            $chercheur->save();
-
-            // Redirection avec un message de succès
-            return redirect()->route('admin.listeChercheurs')->with('success', 'Le chercheur a été mis à jour avec succès.');
-
+            DB::commit();
+            return redirect()->route('admin.listeChercheurs')
+                ->with('success', 'Chercheur modifié avec succès.');
         } catch (\Exception $e) {
-            // Gestion des erreurs
-            return redirect()->route('admin.listeChercheurs')->with('error', 'Une erreur est survenue lors de la mise à jour : ' . $e->getMessage());
+            DB::rollBack();
+            return redirect()->back()
+                ->withInput()
+                ->with('error', 'Erreur lors de la modification : ' . $e->getMessage());
         }
     }
 
@@ -238,55 +279,84 @@ class LaboChercheurController extends Controller
 
     public function search(Request $request)
     {
-        // Récupérer la requête de recherche
-        $query = trim($request->input('query'));
+        try {
+            $query = $request->input('query');
 
-        // Effectuer la recherche dans la table 'chercheurs'
-        $chercheurs = Chercheur::query()
-            ->when($query, function ($queryBuilder) use ($query) {
-                // Diviser la requête en mots-clés (chaque mot ou groupe de mots)
-                $keywords = explode(' ', $query);
+            // Base query avec les relations nécessaires
+            $chercheurs = Chercheur::with(['grades', 'laboratoires', 'umri']);
 
-                if (count($keywords) > 1) {
-                    // Si plusieurs mots sont saisis, chercher par nom et prénom combinés
-                    $nom = $keywords[0]; // Premier mot comme nom
-                    $prenom = implode(' ', array_slice($keywords, 1)); // Le reste comme prénom
+            if ($query) {
+                // Si la recherche contient un espace, on considère que c'est une recherche par nom complet
+                if (str_contains($query, ' ')) {
+                    $parts = explode(' ', $query);
+                    $nom = $parts[0];
+                    $prenom = $parts[1] ?? '';
 
-                    $queryBuilder->where('nomCherch', 'like', '%' . $nom . '%')
-                                ->where('prenomCherch', 'like', '%' . $prenom . '%');
+                    $chercheurs->where(function($q) use ($nom, $prenom) {
+                        // Recherche exacte sur nom et prénom
+                        $q->where(function($subQ) use ($nom, $prenom) {
+                            $subQ->where('nomCherch', 'like', '%' . $nom . '%')
+                                 ->where('prenomCherch', 'like', '%' . $prenom . '%');
+                        })
+                        // OU recherche inversée (prénom nom)
+                        ->orWhere(function($subQ) use ($nom, $prenom) {
+                            $subQ->where('prenomCherch', 'like', '%' . $nom . '%')
+                                 ->where('nomCherch', 'like', '%' . $prenom . '%');
+                        });
+                    });
                 } else {
-                    // Si un seul mot est saisi, chercher par nom ou prénom
-                    $queryBuilder->where('nomCherch', 'like', '%' . $query . '%')
-                                ->orWhere('prenomCherch', 'like', '%' . $query . '%');
+                    // Recherche simple sur un seul terme
+                    $chercheurs->where(function($q) use ($query) {
+                        $q->where('nomCherch', 'like', '%' . $query . '%')
+                          ->orWhere('prenomCherch', 'like', '%' . $query . '%')
+                          ->orWhere('matriculeCherch', 'like', '%' . $query . '%')
+                          ->orWhere('emailCherch', 'like', '%' . $query . '%')
+                          ->orWhereHas('laboratoires', function($subQ) use ($query) {
+                              $subQ->where('sigleLabo', 'like', '%' . $query . '%')
+                                   ->orWhere('nomLabo', 'like', '%' . $query . '%');
+                          })
+                          ->orWhereHas('grades', function($subQ) use ($query) {
+                              $subQ->where('sigleGrade', 'like', '%' . $query . '%')
+                                   ->orWhere('nomGrade', 'like', '%' . $query . '%');
+                          })
+                          ->orWhereHas('umri', function($subQ) use ($query) {
+                              $subQ->where('sigleUMRI', 'like', '%' . $query . '%')
+                                   ->orWhere('nomUMRI', 'like', '%' . $query . '%');
+                          });
+                    });
                 }
-            })
-            ->orWhereHas('laboratoire', function ($queryBuilder) use ($query) {
-                $queryBuilder->where('nomLabo', 'like', '%' . $query . '%');
-            })
-            ->paginate(10); // Pagination des résultats
+            }
 
-        $grades = Grade::all(); // Récupérer tous les grades disponibles
-        $laboratoires = Laboratoire::all(); // Récupérer tous les laboratoires disponibles
+            // Pagination des résultats
+            $chercheurs = $chercheurs->orderByDesc('created_at')->paginate(10);
 
-        // Retourner la vue avec les résultats
-        return view('lab.admin.liste_chercheur', compact('chercheurs', 'query', 'grades', 'laboratoires'));
+            // Récupérer les données nécessaires pour le formulaire
+            $grades = Grade::all();
+            $laboratoires = Laboratoire::all();
+            $umris = UMRI::all();
+
+            return view('lab.admin.liste_chercheur', compact('chercheurs', 'grades', 'laboratoires', 'umris', 'query'));
+
+        } catch (\Exception $e) {
+            return redirect()->route('admin.listeChercheurs')
+                ->with('error', 'Erreur lors de la recherche : ' . $e->getMessage());
+        }
     }
 
 
 
-
+    //supprimer un cherche
     public function delete($id)
     {
         try {
             // Trouver le chercheur à supprimer
             $chercheur = Chercheur::findOrFail($id);
 
-            // Vérifier s'il existe des dépendances
-            if ($chercheur->articles()->exists() ||
-                $chercheur->doctorants()->exists()) {
+            // Vérifier s'il a des articles ou des doctorants encadrés
+            if ($chercheur->articles()->exists() || $chercheur->doctorantsEncadres()->exists()) {
                 return redirect()->back()->with(
                     'error',
-                    'Le chercheur ne peut pas être supprimé car il est associé à des articles ou doctorants. Veuillez dissocier ou supprimer les dépendances avant de continuer.'
+                    'Suppression impossible : ce chercheur est associé à des articles ou des doctorants. Veuillez supprimer ou réassigner ces éléments avant de continuer.'
                 );
             }
 
@@ -294,8 +364,7 @@ class LaboChercheurController extends Controller
             DB::beginTransaction();
 
             // Supprimer les relations many-to-many
-            $chercheur->articles()->detach();
-            $chercheur->doctorants()->detach();
+            $chercheur->laboratoires()->detach();
             $chercheur->grades()->detach();
 
             // Supprimer le chercheur
@@ -313,6 +382,75 @@ class LaboChercheurController extends Controller
                 'error',
                 'Une erreur est survenue lors de la suppression du chercheur. Détails : ' . $e->getMessage()
             );
+        }
+    }
+
+    public function store(Request $request)
+    {
+        // Validation des données
+        $validated = $request->validate([
+            'nomCherch' => 'required|string|max:30',
+            'prenomCherch' => 'required|string|max:100',
+            'genreCherch' => 'nullable|in:M,F',
+            'matriculeCherch' => 'nullable|string|max:20',
+            'password' => 'required|string|min:6|confirmed',
+            'emploiCherch' => 'nullable|string|max:50',
+            'departementCherch' => 'nullable|string|max:100',
+            'fonctionAdministrativeCherch' => 'nullable|string|max:100',
+            'specialiteCherch' => 'nullable|string|max:50',
+            'emailCherch' => 'required|email|max:100|unique:chercheurs,emailCherch',
+            'dateNaissCherch' => 'nullable|date',
+            'dateArriveeCherch' => 'nullable|date',
+            'telCherch' => 'nullable|string|max:30',
+            'idUMRI' => 'nullable|exists:umris,idUMRI',
+            'grades' => 'required|array',
+            'grades.*' => 'exists:grades,idGrade',
+            'gradeDates' => 'nullable|array',
+            'gradeDates.*' => 'nullable|date'
+        ]);
+
+        DB::beginTransaction();
+
+        try {
+            // Créer le chercheur
+            $chercheur = Chercheur::create([
+                'nomCherch' => $validated['nomCherch'],
+                'prenomCherch' => $validated['prenomCherch'],
+                'genreCherch' => $validated['genreCherch'],
+                'matriculeCherch' => $validated['matriculeCherch'],
+                'password' => Hash::make($validated['password']),
+                'emploiCherch' => $validated['emploiCherch'],
+                'departementCherch' => $validated['departementCherch'],
+                'fonctionAdministrativeCherch' => $validated['fonctionAdministrativeCherch'],
+                'specialiteCherch' => $validated['specialiteCherch'],
+                'emailCherch' => $validated['emailCherch'],
+                'dateNaissCherch' => $validated['dateNaissCherch'],
+                'dateArriveeCherch' => $validated['dateArriveeCherch'],
+                'telCherch' => $validated['telCherch'],
+                'idUMRI' => $validated['idUMRI']
+            ]);
+
+            // Attacher les grades avec leurs dates d'obtention
+            if (isset($validated['grades']) && !empty($validated['grades'])) {
+                foreach ($validated['grades'] as $gradeId) {
+                    $dateGrade = isset($validated['gradeDates'][$gradeId])
+                        ? $validated['gradeDates'][$gradeId]
+                        : now();
+
+                    $chercheur->grades()->attach($gradeId, [
+                        'dateGrade' => $dateGrade
+                    ]);
+                }
+            }
+
+            DB::commit();
+            return redirect()->route('admin.listeChercheurs')
+                ->with('success', 'Chercheur créé avec succès.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return redirect()->back()
+                ->withInput()
+                ->with('error', 'Erreur lors de la création : ' . $e->getMessage());
         }
     }
 }

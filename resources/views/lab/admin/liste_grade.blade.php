@@ -5,7 +5,7 @@
 @section('content')
 
 <div class="container mt-4">
-    {{-- Erreur session --}}
+    {{-- Messages d'alerte --}}
     @if (Session::has('error'))
         <div class="alert alert-danger alert-dismissible fade show mx-auto" role="alert" id="alert-danger-login">
             {{ Session::get('error') }}
@@ -15,7 +15,6 @@
         </div>
     @endif
 
-    {{-- Succès session --}}
     @if (Session::has('success'))
         <div class="alert alert-success alert-dismissible fade show" role="alert" id="alert-success-login">
             {{ Session::get('success') }}
@@ -25,7 +24,6 @@
         </div>
     @endif
 
-    {{-- Erreurs de validation --}}
     @if ($errors->any())
         <div class="alert alert-danger alert-dismissible fade show mx-auto" role="alert" id="alert-validation-errors">
             <ul class="list-unstyled mb-0">
@@ -48,13 +46,11 @@
     </form>
 </div>
 
-<div class="container d-flex mt-5 align-items-center">
-    <!-- Bouton pour ajouter un grade -->
-    <div class="d-flex justify-content-end w-100">
-        <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#addGradeModal">
-            Ajouter un Grade
-        </button>
-    </div>
+<div class="d-flex justify-content-end align-items-center mb-2 mt-5" style="max-width: 90%">
+    <!-- Bouton d'ajout -->
+    <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#addGradeModal">
+        <i class="fas fa-plus-circle"></i> Nouveau grade
+    </button>
 </div>
 
 <div class="p-5">
@@ -63,31 +59,66 @@
             Aucun grade disponible.
         </div>
         <div class="d-flex justify-content-center">
-            <img src="{{ asset('assets/img/empty_data.png') }}" alt="aucun article" class="img-fluid" style="width: 350px; height: 350px;">
+            <img src="{{ asset('assets/img/empty_data.png') }}" alt="aucun grade" class="img-fluid" style="width: 350px; height: 350px;">
         </div>
     @else
         <div class="row row-cols-1 row-cols-md-2 g-4">
             @foreach ($grades as $grade)
                 <div class="col mb-4">
                     <div class="card shadow h-100">
-                        <div class="card-body">
-                            <h5 class="card-title">{{ $grade->nomGrade }}</h5>
-                            <p class="card-text">Sigle : {{ $grade->sigleGrade ?? '-' }}</p>
+                        <div class="card-header bg-dark text-white">
+                            <h6 class="card-title mb-0">
+                                <i class="fas fa-graduation-cap"></i> {{ $grade->sigleGrade }}
+                            </h6>
                         </div>
-                        <div class="card-footer d-flex justify-content-end">
-                            <form action="{{ route('admin.modifierGrade', $grade->idGrade) }}" method="GET">
-                                @csrf
-                                <button class="btn btn-primary mr-2">Modifier</button>
-                            </form>
-                            <form id="deleteGradeForm" action="" method="POST" style="display: inline;">
-                                @csrf
-                                @method('POST')
-                                <button type="submit" id="submitDelete" style="display:none;"></button> <!-- Bouton caché -->
-                                <button type="button" class="btn btn-danger" onclick="confirmDelete({{ $grade->idGrade }})">
-                                    <i class="fas fa-trash"></i> Supprimer
-                                </button>
-                            </form>
 
+                        <div class="card-body">
+                            <!-- Nom complet -->
+                            <div class="mb-4">
+                                <h6 class="font-weight-bold text-info mb-2">
+                                    <i class="fas fa-info-circle"></i> Nom complet
+                                </h6>
+                                <p class="mb-2">
+                                    {{ $grade->nomGrade }}
+                                </p>
+                            </div>
+
+                            <!-- Statistiques -->
+                            <div class="mb-4">
+                                <h6 class="font-weight-bold text-info mb-2">
+                                    <i class="fas fa-chart-bar"></i> Statistiques
+                                </h6>
+                                <p class="mb-2">
+                                    <i class="fas fa-users text-secondary"></i>
+                                    <strong>Nombre de chercheurs :</strong>
+                                    <span class="badge badge-info">{{ $grade->getChercheurCount() }}</span>
+                                </p>
+                            </div>
+                        </div>
+
+                        <div class="card-footer bg-light">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <button type="button" class="btn btn-secondary btn-sm"
+                                        data-toggle="modal"
+                                        data-target="#detailsModal_{{ $grade->idGrade }}">
+                                    <i class="fas fa-info-circle"></i> Détails
+                                </button>
+
+                                <div class="d-flex">
+                                    <a href="{{ route('admin.modifierGrade', $grade->idGrade) }}"
+                                       class="btn btn-outline-primary btn-sm mr-2">
+                                        <i class="fas fa-edit"></i> Modifier
+                                    </a>
+
+                                    <form id="deleteGradeForm" method="POST">
+                                        @csrf
+                                        <button type="button" class="btn btn-outline-danger btn-sm"
+                                                onclick="confirmDelete({{ $grade->idGrade }})">
+                                            <i class="fas fa-trash"></i> Supprimer
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -100,63 +131,86 @@
     @endif
 </div>
 
-<!-- Modal pour enregistrer un grade -->
-<div class="modal fade" id="addGradeModal" tabindex="-1" aria-labelledby="addGradeModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <form action="{{ route('admin.enregistrerGrade') }}" method="POST">
-            @csrf
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="addGradeModalLabel">Ajouter un Grade</h5>
-                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                        <span aria-hidden="true">&times;</span>
-                    </button>
-                </div>
-                <div class="modal-body">
-                    <div class="form-group">
-                        <label for="nomGrade">Nom du Grade <span class="text-danger">*</span></label>
-                        <input type="text" class="form-control" id="nomGrade" name="nomGrade" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="sigleGrade">Sigle</label>
-                        <input type="text" class="form-control" id="sigleGrade" name="sigleGrade">
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Annuler</button>
-                    <button type="submit" class="btn btn-primary">Enregistrer</button>
-                </div>
+<!-- Modal d'ajout de grade -->
+<div class="modal fade" id="addGradeModal" tabindex="-1" role="dialog" aria-labelledby="addGradeModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-dark text-white">
+                <h5 class="modal-title" id="addGradeModalLabel">
+                    <i class="fas fa-plus-circle"></i> Nouveau grade
+                </h5>
+                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
             </div>
-        </form>
+            <div class="modal-body">
+                <form action="{{ route('admin.enregistrerGrade') }}" method="POST">
+                    @csrf
+                    <div class="form-group mb-4">
+                        <label for="sigleGrade" class="font-weight-bold">
+                            Sigle du grade <span class="text-danger">*</span>
+                        </label>
+                        <input type="text" class="form-control form-control-lg @error('sigleGrade') is-invalid @enderror"
+                               id="sigleGrade" name="sigleGrade" required>
+                        <small class="form-text text-muted">Ex: PR, MCF, etc.</small>
+                        @error('sigleGrade')
+                            <div class="invalid-feedback">{{ $message }}</div>
+                        @enderror
+                    </div>
+
+                    <div class="form-group">
+                        <label for="nomGrade" class="font-weight-bold">
+                            Nom complet du grade <span class="text-danger">*</span>
+                        </label>
+                        <input type="text" class="form-control @error('nomGrade') is-invalid @enderror"
+                               id="nomGrade" name="nomGrade" required>
+                        <small class="form-text text-muted">Ex: Professeur des Universités</small>
+                        @error('nomGrade')
+                            <div class="invalid-feedback">{{ $message }}</div>
+                        @enderror
+                    </div>
+
+                    <div class="modal-footer bg-light">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> Enregistrer
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
     </div>
 </div>
 
+<!-- Formulaire de suppression -->
+<form id="deleteGradeForm" method="POST" style="display: none;">
+    @csrf
+    @method('DELETE')
+</form>
+
+@endsection
 
 @section('scripts')
 <script>
-  function confirmDelete(gradeId) {
-    Swal.fire({
-        title: "Êtes-vous sûr de vouloir supprimer ce grade ?",
-        icon: "warning",
-        showCancelButton: true,
-        confirmButtonColor: "#3085d6",
-        cancelButtonColor: "#d33",
-        confirmButtonText: "Oui, Supprimer !",
-        cancelButtonText: "Annuler"
-    }).then((result) => {
-        if (result.isConfirmed) {
-            // Trouver le formulaire pour l'ID spécifique
-            const form = document.getElementById('deleteGradeForm');
-            // Mettre à jour l'action du formulaire pour inclure l'ID spécifique
-            form.action = '/admin/supprimer-grade/' + gradeId;
-            // Soumettre le formulaire
-            form.submit();
-        }
-    });
-}
+    function confirmDelete(gradeId) {
+        Swal.fire({
+            title: "Êtes-vous sûr de vouloir supprimer ce grade ?",
+            text: "Cette action est irréversible.",
+            icon: "warning",
+            showCancelButton: true,
+            confirmButtonColor: "#3085d6",
+            cancelButtonColor: "#d33",
+            confirmButtonText: "Oui, Supprimer !",
+            cancelButtonText: "Annuler"
+        }).then((result) => {
+            if (result.isConfirmed) {
+                // Trouver le formulaire et mettre à jour l'URL de l'action
+                const form = document.getElementById('deleteGradeForm');
+                form.action = '/admin/supprimerGrade/' + gradeId;
 
+                // Soumettre le formulaire
+                form.submit();
+            }
+        });
+    }
 </script>
-@endsection
-
-
 @endsection

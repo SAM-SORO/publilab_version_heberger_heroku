@@ -5,39 +5,8 @@
 @section('content')
 
 <div class="container mt-4">
-    {{-- Erreur session --}}
-    @if (Session::has('error'))
-        <div class="alert alert-danger alert-dismissible fade show mx-auto" role="alert" id="alert-danger-login">
-            {{ Session::get('error') }}
-            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                <span aria-hidden="true">&times;</span>
-            </button>
-        </div>
-    @endif
-
-    {{-- Succès session --}}
-    @if (Session::has('success'))
-        <div class="alert alert-success alert-dismissible fade show" role="alert" id="alert-success-login">
-            {{ Session::get('success') }}
-            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                <span aria-hidden="true">&times;</span>
-            </button>
-        </div>
-    @endif
-
-    {{-- Erreurs de validation --}}
-    @if ($errors->any())
-        <div class="alert alert-danger alert-dismissible fade show mx-auto" role="alert" id="alert-validation-errors">
-            <ul class="list-unstyled mb-0">
-                @foreach ($errors->all() as $error)
-                    <li>{{ $error }}</li>
-                @endforeach
-            </ul>
-            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                <span aria-hidden="true">&times;</span>
-            </button>
-        </div>
-    @endif
+    {{-- Messages d'alerte --}}
+    @include('lab.partials.alerts')
 </div>
 
 <div class="container mt-5">
@@ -48,12 +17,11 @@
     </form>
 </div>
 
-
 <div class="container d-flex mt-5 align-items-center">
     <!-- Bouton pour ajouter une base d'indexation -->
     <div class="d-flex justify-content-end w-100">
-        <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#addBaseIndexationModal">
-            Ajouter
+        <button type="button" class="btn btn-outline-primary btn-sm shadow-sm" data-toggle="modal" data-target="#addBaseIndexationModal">
+            <i class="fas fa-plus"></i> Ajouter
         </button>
     </div>
 </div>
@@ -70,27 +38,18 @@
         <div class="row row-cols-1 row-cols-md-2 g-4">
             @foreach ($bdIndexations as $bdIndexation)
                 <div class="col mb-4">
-                    <div class="card shadow h-100">
+                    <div class="card shadow-sm h-100">
                         <div class="card-body">
                             <h5 class="card-title">{{ $bdIndexation->nomBDInd }}</h5>
                         </div>
                         <div class="card-footer d-flex justify-content-end">
-                            <form action="{{ route('admin.modifierBaseIndexation', $bdIndexation->idBDIndex) }}" method="GET">
-                                @csrf
-                                <button class="btn btn-primary mr-2">Modifier</button>
-                            </form>
+                            <a href="{{ route('admin.modifierBaseIndexation', $bdIndexation->idBDIndex) }}" class="btn btn-outline-primary btn-sm mr-2">
+                                <i class="fas fa-edit"></i> Modifier
+                            </a>
 
-                            <form id="deleteBdIndexationForm" action="{{ route('admin.supprimerBaseIndexation', $bdIndexation->idBDIndex) }}" method="POST" style="display: inline;">
-                                @csrf
-                                @method('POST')
-                                <button type="submit" id="submitDelete" style="display:none;"></button> <!-- Bouton caché -->
-                                <button type="button" class="btn btn-danger" onclick="confirmDelete({{ $bdIndexation->idBDIndex }})">
-                                    <i class="fas fa-trash"></i> Supprimer
-                                </button>
-                            </form>
-
-
-
+                            <button type="button" class="btn btn-outline-danger btn-sm" onclick="confirmDelete({{ $bdIndexation->idBDIndex }})">
+                                <i class="fas fa-trash"></i> Supprimer
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -130,6 +89,11 @@
     </div>
 </div>
 
+<!-- Formulaire caché pour la suppression -->
+<form id="deleteBdIndexationForm" action="" method="POST" style="display: none;">
+    @csrf
+    @method('POST')
+</form>
 
 @endsection
 
@@ -155,8 +119,6 @@
             }
         });
     }
-
-
 </script>
 @endsection
 

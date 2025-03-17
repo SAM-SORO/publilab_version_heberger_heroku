@@ -21,16 +21,17 @@ class DatabaseSeeder extends Seeder
         // ]);
 
         $this->call([
-            // AdminTableSeeder::class,
+            AdminTableSeeder::class,
+            ChercheurTableSeeder::class,
+            DoctorantSeeder::class,
             // VisiteurTableSeeder::class,
             // EdpTableSeeder::class,
             // UmriTableSeeder::class,
-            LaboratoireTableSeeder::class,
-            ChercheurTableSeeder::class,
-            ArticleTableSeeder::class,
-            ChercheurArticleSeeder::class,
-            RevueSeeder::class,
-            BdIndexationRevueSeeder::class,
+            //LaboratoireTableSeeder::class,
+            //ArticleTableSeeder::class,
+            //ChercheurArticleSeeder::class,
+            //RevueSeeder::class,
+            //BdIndexationRevueSeeder::class,
         ]);
     }
 }

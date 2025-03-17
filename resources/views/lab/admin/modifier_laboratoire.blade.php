@@ -1,206 +1,206 @@
 @extends('baseAdmin')
 
 @section('content')
-<div class="container-sm mb-5 bg-white shadow-sm mt-5 mb-5 py-5 px-5" style="max-width: 90%">
+<div class="container-fluid">
+    <div class="row justify-content-center">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <a href="{{ route('admin.listeLaboratoires') }}" class="btn btn-outline-primary">
+                    <i class="fas fa-arrow-left"></i> Retour
+                </a>
+                <h3 class="mb-0">Modifier le laboratoire</h3>
+                <div style="width: 40px"></div>
+            </div>
 
-    <!-- Bouton Retour -->
-    <div class="d-flex justify-content-between align-items-center mb-5">
-        <a href="{{ route('admin.listeLaboratoires') }}" class="btn btn-outline-secondary mb-4">
-            <i class="fa fa-arrow-left"></i> Retour
-        </a>
+            <form action="{{ route('admin.updateLaboratoire', $laboratoire->idLabo) }}" method="POST">
+                @csrf
+                @method('POST')
 
-        <h2 class="mb-4 flex-grow-1 text-center">Modifier un laboratoire</h2>
+                <!-- Informations principales -->
+                <div class="card shadow-sm mb-4">
+                    <div class="card-header bg-dark text-white">
+                        <h6 class="mb-0"><i class="fas fa-building"></i> Informations principales</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="sigleLabo">Sigle <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control @error('sigleLabo') is-invalid @enderror"
+                                           id="sigleLabo" name="sigleLabo"
+                                           value="{{ old('sigleLabo', $laboratoire->sigleLabo) }}" required>
+                                    @error('sigleLabo')
+                                        <span class="invalid-feedback">{{ $message }}</span>
+                                    @enderror
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="nomLabo">Nom <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control @error('nomLabo') is-invalid @enderror"
+                                           id="nomLabo" name="nomLabo"
+                                           value="{{ old('nomLabo', $laboratoire->nomLabo) }}" required>
+                                    @error('nomLabo')
+                                        <span class="invalid-feedback">{{ $message }}</span>
+                                    @enderror
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Année et Description -->
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label for="anneeCreation">Année de création</label>
+                                    <input type="number" min="1900" max="{{ date('Y') }}"
+                                           class="form-control @error('anneeCreation') is-invalid @enderror"
+                                           id="anneeCreation" name="anneeCreation"
+                                           value="{{ old('anneeCreation', $laboratoire->anneeCreation) }}">
+                                    @error('anneeCreation')
+                                        <span class="invalid-feedback">{{ $message }}</span>
+                                    @enderror
+                                </div>
+                            </div>
+                            <div class="col-md-8">
+                                <div class="form-group">
+                                    <label for="descLabo">Description</label>
+                                    <textarea class="form-control @error('descLabo') is-invalid @enderror"
+                                              id="descLabo" name="descLabo" rows="3"
+                                              style="resize: none;">{{ old('descLabo', $laboratoire->descLabo) }}</textarea>
+                                    @error('descLabo')
+                                        <span class="invalid-feedback">{{ $message }}</span>
+                                    @enderror
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Localisation -->
+                <div class="card shadow-sm mb-4">
+                    <div class="card-header bg-dark text-white">
+                        <h6 class="mb-0"><i class="fas fa-map-marker-alt"></i> Localisation</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="localisationLabo">Localisation</label>
+                                    <input type="text" class="form-control" id="localisationLabo" name="localisationLabo"
+                                           value="{{ old('localisationLabo', $laboratoire->localisationLabo) }}">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="adresseLabo">Adresse complète</label>
+                                    <input type="text" class="form-control" id="adresseLabo" name="adresseLabo"
+                                           value="{{ old('adresseLabo', $laboratoire->adresseLabo) }}">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Contact -->
+                <div class="card shadow-sm mb-4">
+                    <div class="card-header bg-dark text-white">
+                        <h6 class="mb-0"><i class="fas fa-address-card"></i> Contact</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="telLabo">Téléphone</label>
+                                    <input type="tel" class="form-control" id="telLabo" name="telLabo"
+                                           value="{{ old('telLabo', $laboratoire->telLabo) }}">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="faxLabo">Fax</label>
+                                    <input type="tel" class="form-control" id="faxLabo" name="faxLabo"
+                                           value="{{ old('faxLabo', $laboratoire->faxLabo) }}">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="emailLabo">Email <span class="text-danger">*</span></label>
+                            <input type="email" class="form-control" id="emailLabo" name="emailLabo"
+                                   value="{{ old('emailLabo', $laboratoire->emailLabo) }}" required>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Rattachement -->
+                <div class="card shadow-sm mb-4">
+                    <div class="card-header bg-dark text-white">
+                        <h6 class="mb-0"><i class="fas fa-sitemap"></i> Rattachement</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-12">
+                                <div class="form-group">
+                                    <label for="idUMRI">UMRI</label>
+                                    <select class="form-control select2" id="idUMRI" name="idUMRI">
+                                        <option value="">Sélectionnez un UMRI</option>
+                                        @foreach ($umris as $umri)
+                                            <option value="{{ $umri->idUMRI }}"
+                                                {{ old('idUMRI', $laboratoire->idUMRI) == $umri->idUMRI ? 'selected' : '' }}>
+                                                {{ $umri->sigleUMRI }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="axesRecherche">Axes de recherche</label>
+                            <select class="form-control select2" id="axesRecherche" name="axesRecherche[]" multiple>
+                                @foreach ($axesRecherches as $axe)
+                                    <option value="{{ $axe->idAxeRech }}"
+                                        {{ in_array($axe->idAxeRech, old('axesRecherche', $laboratoire->axesRecherches->pluck('idAxeRech')->toArray())) ? 'selected' : '' }}>
+                                        {{ $axe->titreAxeRech }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="idDirecteurLabo">Directeur du laboratoire</label>
+                            <select class="form-control select2" id="idDirecteurLabo" name="idDirecteurLabo">
+                                <option value="">Sélectionnez un directeur</option>
+                                @foreach ($chercheurs as $chercheur)
+                                    <option value="{{ $chercheur->idCherch }}"
+                                        {{ old('idDirecteurLabo', $laboratoire->idDirecteurLabo) == $chercheur->idCherch ? 'selected' : '' }}>
+                                        {{ $chercheur->nomCherch }} {{ $chercheur->prenomCherch }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="text-center mt-4 mb-5">
+                    <button type="submit" class="btn btn-primary btn-lg px-5 shadow">
+                        <i class="fas fa-save mr-2"></i> Sauvegarder les modifications
+                    </button>
+                </div>
+            </form>
+        </div>
     </div>
-
-    <div class="mb-5">
-        {{-- Erreur session --}}
-        @if (Session::has('error'))
-            <div class="alert alert-danger alert-dismissible fade show mx-auto" role="alert" id="alert-danger-login">
-                {{ Session::get('error') }}
-                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
-            </div>
-        @endif
-
-        {{-- Succès session --}}
-        @if (Session::has('success'))
-            <div class="alert alert-success alert-dismissible fade show" role="alert" id="alert-success-login">
-                {{ Session::get('success') }}
-                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
-            </div>
-        @endif
-
-        {{-- Erreurs de validation --}}
-        @if ($errors->any())
-            <div class="alert alert-danger alert-dismissible fade show mx-auto" role="alert" id="alert-validation-errors">
-                <ul class="list-unstyled mb-0">
-                    @foreach ($errors->all() as $error)
-                        <li>{{ $error }}</li>
-                    @endforeach
-                </ul>
-                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
-            </div>
-        @endif
-    </div>
-
-    <form action="{{ route('admin.updateLaboratoire', $laboratoire->idLabo) }}" method="POST">
-        @csrf
-        @method('POST')
-
-        <!-- Nom du laboratoire -->
-        <div class="form-group mb-4">
-            <label for="nomLabo">Nom du Laboratoire <span class="text-danger">*</span></label>
-            <input type="text" class="form-control @error('nomLabo') is-invalid @enderror"
-                   id="nomLabo" name="nomLabo"
-                   value="{{ old('nomLabo', $laboratoire->nomLabo) }}" required>
-            @error('nomLabo')
-                <span class="invalid-feedback">{{ $message }}</span>
-            @enderror
-        </div>
-
-        <!-- Année de création -->
-        <div class="form-group mb-4">
-            <label for="anneeCreation">Année de création</label>
-            <input type="text" class="form-control @error('anneeCreation') is-invalid @enderror"
-                   id="anneeCreation" name="anneeCreation"
-                   value="{{ old('anneeCreation', $laboratoire->anneeCreation) }}">
-            @error('anneeCreation')
-                <span class="invalid-feedback">{{ $message }}</span>
-            @enderror
-        </div>
-
-        <!-- Localisation -->
-        <div class="form-group mb-4">
-            <label for="localisationLabo">Localisation</label>
-            <input type="text" class="form-control @error('localisationLabo') is-invalid @enderror"
-                   id="localisationLabo" name="localisationLabo"
-                   value="{{ old('localisationLabo', $laboratoire->localisationLabo) }}">
-            @error('localisationLabo')
-                <span class="invalid-feedback">{{ $message }}</span>
-            @enderror
-        </div>
-
-        <!-- Adresse -->
-        <div class="form-group mb-4">
-            <label for="adresseLabo">Adresse</label>
-            <input type="text" class="form-control @error('adresseLabo') is-invalid @enderror"
-                   id="adresseLabo" name="adresseLabo"
-                   value="{{ old('adresseLabo', $laboratoire->adresseLabo) }}">
-            @error('adresseLabo')
-                <span class="invalid-feedback">{{ $message }}</span>
-            @enderror
-        </div>
-
-        <!-- Téléphone -->
-        <div class="form-group mb-4">
-            <label for="telLabo">Téléphone</label>
-            <input type="text" class="form-control @error('telLabo') is-invalid @enderror"
-                   id="telLabo" name="telLabo"
-                   value="{{ old('telLabo', $laboratoire->telLabo) }}">
-            @error('telLabo')
-                <span class="invalid-feedback">{{ $message }}</span>
-            @enderror
-        </div>
-
-        <!-- Fax -->
-        <div class="form-group mb-4">
-            <label for="faxLabo">Fax</label>
-            <input type="text" class="form-control @error('faxLabo') is-invalid @enderror"
-                   id="faxLabo" name="faxLabo"
-                   value="{{ old('faxLabo', $laboratoire->faxLabo) }}">
-            @error('faxLabo')
-                <span class="invalid-feedback">{{ $message }}</span>
-            @enderror
-        </div>
-
-        <!-- Email -->
-        <div class="form-group mb-4">
-            <label for="emailLabo">Email <span class="text-danger">*</span></label>
-            <input type="email" class="form-control @error('emailLabo') is-invalid @enderror"
-                   id="emailLabo" name="emailLabo"
-                   value="{{ old('emailLabo', $laboratoire->emailLabo) }}" required>
-            @error('emailLabo')
-                <span class="invalid-feedback">{{ $message }}</span>
-            @enderror
-        </div>
-
-        <!-- Description -->
-        <div class="form-group mb-4">
-            <label for="descLabo">Description</label>
-            <textarea class="form-control @error('descLabo') is-invalid @enderror"
-                      id="descLabo" name="descLabo" rows="3">{{ old('descLabo', $laboratoire->descLabo) }}</textarea>
-            @error('descLabo')
-                <span class="invalid-feedback">{{ $message }}</span>
-            @enderror
-        </div>
-
-        <!-- UMRI -->
-        <div class="form-group mb-4">
-            <label for="idUMRI">UMRI <span class="text-danger">*</span></label>
-            <select class="form-control @error('idUMRI') is-invalid @enderror"
-                    id="idUMRI" name="idUMRI" required>
-                <option value="">-- Sélectionnez un UMRI --</option>
-                @foreach ($umris as $umri)
-                    <option value="{{ $umri->idUMRI }}"
-                        {{ old('idUMRI', $laboratoire->idUMRI) == $umri->idUMRI ? 'selected' : '' }}>
-                        {{ $umri->nomUMRI }}
-                    </option>
-                @endforeach
-            </select>
-            @error('idUMRI')
-                <span class="invalid-feedback">{{ $message }}</span>
-            @enderror
-        </div>
-
-        <!-- Axes de recherche -->
-        <div class="form-group mb-4">
-            <label for="axesRecherche">Axes de recherche</label>
-            <select class="form-control @error('axesRecherche') is-invalid @enderror"
-                    id="axesRecherche" name="axesRecherche[]" multiple>
-                @foreach ($axesRecherches as $axe)
-                    <option value="{{ $axe->idAxeRech }}"
-                        {{ in_array($axe->idAxeRech, old('axesRecherche', $laboratoire->axesRecherches->pluck('idAxeRech')->toArray() ?? [])) ? 'selected' : '' }}>
-                        {{ $axe->titreAxeRech }}
-                    </option>
-                @endforeach
-
-            </select>
-            @error('axesRecherche')
-                <span class="invalid-feedback">{{ $message }}</span>
-            @enderror
-        </div>
-
-        <!-- Bouton de soumission -->
-        <div class="form-group mb-4 text-center">
-            <button type="submit" class="btn btn-primary">
-                <i class="fas fa-save"></i> Sauvegarder les modifications
-            </button>
-        </div>
-    </form>
-
 </div>
 @endsection
 
 @section('scripts')
 <script>
     $(document).ready(function() {
-        // Initialisation de Select2 pour l'UMRI
-        $('#idUMRI').select2({
-            placeholder: '-- Sélectionnez un UMRI --',
-            allowClear: true,
-            width: '100%'
+        $('.select2').select2({
+            width: '100%',
+            allowClear: true
         });
 
-        // Initialisation de Select2 pour les axes de recherche
         $('#axesRecherche').select2({
             placeholder: 'Sélectionnez les axes de recherche',
             allowClear: true,
-            width: '100%',
             maximumSelectionLength: 5
         });
     });

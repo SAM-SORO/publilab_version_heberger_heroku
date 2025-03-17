@@ -13,60 +13,200 @@ class Article extends Model
 
     protected $table = 'articles';
     protected $primaryKey = 'idArticle';
-    protected $fillable = ['titreArticle', 'resumeArticle','doi'];
 
-    protected $dates = ['datePubArt']; // Cette ligne permet à Eloquent de gérer la conversion en Carbon
+    /**
+     * Les attributs qui sont mass assignable.
+     */
+    protected $fillable = [
+        'titreArticle',
+        'lienArticle',
+        'doi',
+        'resumeArticle',
+        'numero',
+        'volume',
+        'pageDebut',
+        'pageFin',
+        'datePubArt',
+        'idPub',
+        'idTypeArticle'
+    ];
 
+    /**
+     * Les conversions de types pour les attributs.
+     */
+    protected $casts = [
+        'datePubArt' => 'date',
+        'numero' => 'integer',
+        'volume' => 'integer',
+        'pageDebut' => 'integer',
+        'pageFin' => 'integer',
+        'titreArticle' => 'string',
+        'lienArticle' => 'string',
+        'doi' => 'string',
+        'resumeArticle' => 'string'
+    ];
 
-
-    // Relation avec Chercheur (many-to-many)
+    /**
+     * Relation avec Chercheur (many-to-many)
+     * Cette relation concerne les chercheurs directement associés à l'article
+     */
     public function chercheurs()
     {
-        // Retourne les chercheurs ayant co-écrit cet article
-        return $this->belongsToMany(Chercheur::class, 'chercheur_article', 'idArticle', 'idCherch');
-        // Un article peut être écrit par plusieurs chercheurs,
-        // et un chercheur peut écrire plusieurs articles.
+        return $this->belongsToMany(Chercheur::class, 'chercheur_article', 'idArticle', 'idCherch')
+            ->withPivot('rang')
+            ->withTimestamps();
     }
 
-
-    // Relation avec Revue (many-to-many)
-    public function revues()
+    /**
+     * Relation avec Publication (belongsTo)
+     */
+    public function publication()
     {
-        return $this->belongsToMany(Revue::class, 'article_revue', 'idArticle', 'idRevue')
-                    ->withPivot('datePubArt', 'volume', 'numero' ,'pageDebut', 'pageFin');
-        // Un article peut être publié dans plusieurs revues,
-        // et une revue peut contenir plusieurs articles.
+        return $this->belongsTo(Publication::class, 'idPub');
     }
 
-
-
-    // Relation avec les chercheurs qui encadrent les doctorants pour cet article (via la table Doctorant_Article_Chercheur)
-    public function encadrants()
+    /**
+     * Relation avec TypeArticle (belongsTo)
+     */
+    public function typeArticle()
     {
-        return $this->belongsToMany(Chercheur::class, 'doctorant_article_chercheur', 'idArticle', 'idCherch')
-                    ->withPivot('idDoc');
+        return $this->belongsTo(TypeArticle::class, 'idTypeArticle');
     }
 
-
-
-
-    // Relation indirecte avec les doctorants (via la table Doctorant_Article_Chercheur)
+    /**
+     * Relation avec les doctorants
+     * Cette relation concerne les doctorants associés à l'article via la table pivot
+     */
     public function doctorants()
     {
-        return $this->belongsToMany(Doctorant::class, 'doctorant_article_chercheur', 'idArticle', 'idDoc')
-                    ->withPivot('idCherch');
+        return $this->belongsToMany(
+            Doctorant::class,
+            'doctorant_article_chercheur',
+            'idArticle',
+            'idDoc'
+        )
+        ->withPivot('idCherch');
     }
 
+    /**
+     * Obtenir les chercheurs par ordre alphabétique
+     */
+    public function getChercheursOrdered()
+    {
+        return $this->chercheurs()
+            ->orderBy('nomCherch')
+            ->orderBy('prenomCherch')
+            ->get();
+    }
 
+    /**
+     * Obtenir les doctorants par ordre alphabétique
+     */
+    public function getDoctorantsOrdered()
+    {
+        return $this->doctorants()
+            ->orderBy('nomDoc')
+            ->orderBy('prenomDoc')
+            ->get();
+    }
 
+    /**
+     * Obtenir les articles par année
+     */
+    public static function getArticlesByYear($year)
+    {
+        return static::whereYear('datePubArt', $year)
+            ->orderBy('datePubArt', 'desc')
+            ->get();
+    }
 
-    // // Relation avec les doctorants et chercheurs via la table Doctorant_Article_Chercheur
-    // public function doctorantsChercheurs()
-    // {
-    //     // Retourne les doctorants et chercheurs associés à cet article
-    //     return $this->belongsToMany(Doctorant::class, 'doctorant_article_chercheur', 'idArticle', 'idDoc')
-    //                 ->withPivot('idCherch');
-    // }
+    /**
+     * Obtenir les articles récents
+     */
+    public static function getRecentArticles($limit = 5)
+    {
+        return static::orderBy('datePubArt', 'desc')
+            ->take($limit)
+            ->get();
+    }
 
+    /**
+     * Scope pour obtenir tous les articles publiés une année spécifique.
+     * Exemple: $articles2025 = Article::ofYear(2025)->get();
+     */
+    public function scopeOfYear($query, $year)
+    {
+        return $query->whereYear('datePubArt', $year);
+    }
 
+    /**
+     * Scope pour les articles d'une publication spécifique
+     */
+    public function scopeInPublication($query, $idPub)
+    {
+        return $query->where('idPub', $idPub);
+    }
+
+    /**
+     * Scope pour les articles d'un type spécifique
+     */
+    public function scopeOfType($query, $idTypeArticle)
+    {
+        return $query->where('idTypeArticle', $idTypeArticle);
+    }
+
+    /**
+     * Obtenir le nombre total d'articles
+     */
+    public static function getArticlesCount()
+    {
+        return static::count();
+    }
+
+    /**
+     * Obtenir tous les auteurs de l'article (chercheurs et doctorants) correctement formatés
+     *
+     * @return string
+     */
+    public function getFormattedAuthors()
+    {
+        $auteurs = [];
+
+        // Si l'article a des doctorants
+        if ($this->doctorants->isNotEmpty()) {
+            // Récupérer les chercheurs associés via doctorant_article_chercheur
+            $chercheurIds = DB::table('doctorant_article_chercheur')
+                ->where('idArticle', $this->idArticle)
+                ->pluck('idCherch')
+                ->toArray();
+
+            $chercheurs = Chercheur::whereIn('idCherch', $chercheurIds)
+                ->orderBy('nomCherch')
+                ->orderBy('prenomCherch')
+                ->get();
+
+            // Ajouter les chercheurs à la liste
+            foreach ($chercheurs as $chercheur) {
+                $auteurs[] = $chercheur->prenomCherch . ' ' . strtoupper($chercheur->nomCherch);
+            }
+
+            // Ajouter les doctorants à la liste
+            foreach ($this->doctorants as $doctorant) {
+                $auteurs[] = $doctorant->prenomDoc . ' ' . strtoupper($doctorant->nomDoc);
+            }
+        }
+        // Si l'article n'a pas de doctorants (chercheurs uniquement)
+        else {
+            // Récupérer les chercheurs avec leur rang
+            $chercheurs = $this->chercheurs()
+                ->orderBy('chercheur_article.rang')
+                ->get();
+
+            foreach ($chercheurs as $chercheur) {
+                $auteurs[] = $chercheur->prenomCherch . ' ' . strtoupper($chercheur->nomCherch);
+            }
+        }
+        
+        return implode(', ', $auteurs);
+    }
 }

@@ -3,54 +3,78 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Model;
+use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Notifications\Notifiable;
+use Laravel\Sanctum\HasApiTokens;
 
-class Doctorant extends Model
+class Doctorant extends Authenticatable
 {
-    use HasFactory;
+    use HasApiTokens, HasFactory, Notifiable;
 
     protected $table = 'doctorants';
     protected $primaryKey = 'idDoc';
-    protected $fillable = ['nomDoc', 'prenomDoc', 'idTheme'];
 
-        // Relation avec Theme (inverse de la relation one-to-many)
-        public function theme()
-        {
-            return $this->belongsTo(Theme::class, 'idTheme');
-            // Un doctorant est associé à un thème de recherche.
-        }
+    protected $fillable = [
+        'nomDoc',
+        'prenomDoc',
+        'genreDoc',
+        'matriculeDoc',
+        'password',
+        'emailDoc',
+        'telDoc',
+        'idTheme'
+    ];
 
-        // Relation avec Chercheur (many-to-many)
-        public function encadrants()
-        {
-            return $this->belongsToMany(Chercheur::class, 'doctorant_chercheur', 'idDoc', 'idCherch')
-                ->withPivot('dateDebut', 'dateFin');
-            // Un doctorant peut avoir plusieurs chercheurs comme encadrants,
-            // et un chercheur peut encadrer plusieurs doctorants.
-        }
+    protected $guard = "doctorant";
 
-        // Relation avec les articles et chercheurs via la table Doctorant_Article_Chercheur
-        public function articles()
-        {
-            // Retourne les articles et les chercheurs associés à ce doctorant
-            return $this->belongsToMany(Article::class, 'doctorant_article_chercheur', 'idDoc', 'idArticle')
-                        ->withPivot('idCher');
-        }
+    protected $hidden = [
+        'password',
+        'remember_token',
+    ];
 
+    protected $casts = [
+        'password' => 'hashed',
+        'email_verified_at' => 'datetime',
+    ];
 
-        // Relation avec les encadrants (chercheurs) via la relation ternaire avec `Article`
-        // public function encadrants()
-        // {
-        //     return $this->belongsToMany(Chercheur::class, 'doctorant_article_chercheur', 'idDoc', 'idCher');
-        // }
+    // Relation avec Theme (inverse de la relation one-to-many)
+    public function theme()
+    {
+        return $this->belongsTo(Theme::class, 'idTheme');
+        // Un doctorant est associé à un thème de recherche.
+    }
 
-        // // Relation avec Article (many-to-many)
-        // public function articles()
-        // {
-        //     return $this->belongsToMany(Article::class, 'doctorant_article_chercheur');
-        //     // Un doctorant peut écrire plusieurs articles,
-        //     // et un article peut être écrit par plusieurs doctorants.
-        // }
+    // Relation avec Chercheur (many-to-many) pour les encadrants
+    public function encadrants()
+    {
+        return $this->belongsToMany(Chercheur::class, 'doctorant_chercheur', 'idDoc', 'idCherch')
+            ->withPivot(['dateDebut', 'dateFin']);
+            
+            // ->withTimestamps();
 
+    }
 
+    // Relation avec les articles et chercheurs
+    public function articles()
+    {
+        return $this->belongsToMany(Article::class, 'doctorant_article_chercheur', 'idDoc', 'idArticle')
+            ->withPivot('idCherch');
+            // ->withTimestamps();
+    }
+
+    /**
+     * Obtenir le nom complet du doctorant
+     */
+    public function getFullNameAttribute()
+    {
+        return "{$this->nomDoc} {$this->prenomDoc}";
+    }
+
+    /**
+     * Vérifie si le doctorant a un thème attribué
+     */
+    public function hasTheme()
+    {
+        return !is_null($this->idTheme);
+    }
 }

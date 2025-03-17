@@ -11,19 +11,65 @@ class Grade extends Model
 
     protected $table = 'grades';
     protected $primaryKey = 'idGrade';
-    protected $fillable = ['sigleGrade', 'nomGrade'];
 
-    // Relation avec Chercheur (many-to-many)
+    protected $fillable = [
+        'sigleGrade',
+        'nomGrade'
+    ];
 
+    protected $casts = [
+        'sigleGrade' => 'string',
+        'nomGrade' => 'string'
+    ];
+
+    /**
+     * Relation avec Chercheur (many-to-many)
+     * Un grade peut être attribué à plusieurs chercheurs,
+     * et un chercheur peut avoir plusieurs grades au fil du temps.
+     */
     public function chercheurs()
     {
         return $this->belongsToMany(Chercheur::class, 'chercheur_grade', 'idGrade', 'idCherch')
-                    ->withPivot('dateGrade');
-                    
-        // Un grade peut être attribué à plusieurs chercheurs, et un chercheur peut avoir plusieurs grades.
-        // La table pivot chercheur_grade contient également une colonne dateGrade.
+            ->withPivot('dateGrade');
     }
 
+
+
+
+    /**
+     * Vérifie si un chercheur spécifique a ce grade
+     */
+    public function hasChercheur($idChercheur)
+    {
+        return $this->chercheurs()
+            ->where('idCherch', $idChercheur)
+            ->exists();
+    }
+
+    /**
+     * Obtenir le nombre de chercheurs ayant ce grade
+     */
+    public function getChercheurCount()
+    {
+        return $this->chercheurs()->count();
+    }
+
+
+    /**
+     * Vérifie si le grade est attribué à des chercheurs
+     */
+    public function isUsed()
+    {
+        return $this->chercheurs()->exists();
+    }
+
+    /**
+     * Obtenir la représentation complète du grade
+     */
+    public function getFullGradeAttribute()
+    {
+        return "{$this->sigleGrade} - {$this->nomGrade}";
+    }
 }
 
 

@@ -4,153 +4,273 @@
 
 @section('content')
 
-<div class="container mt-4">
-    {{-- Erreur session --}}
-    @if (Session::has('error'))
-        <div class="alert alert-danger alert-dismissible fade show mx-auto" role="alert" id="alert-danger-login">
-            {{ Session::get('error') }}
-            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                <span aria-hidden="true">&times;</span>
-            </button>
-        </div>
-    @endif
+<div class="container-fluid">
+  
 
-    {{-- Succès session --}}
-    @if (Session::has('success'))
-        <div class="alert alert-success alert-dismissible fade show" role="alert" id="alert-success-login">
-            {{ Session::get('success') }}
-            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                <span aria-hidden="true">&times;</span>
-            </button>
-        </div>
-    @endif
-
-    {{-- Erreurs de validation --}}
-    @if ($errors->any())
-        <div class="alert alert-danger alert-dismissible fade show mx-auto" role="alert" id="alert-validation-errors">
-            <ul class="list-unstyled mb-0">
-                @foreach ($errors->all() as $error)
-                    <li>{{ $error }}</li>
-                @endforeach
-            </ul>
-            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                <span aria-hidden="true">&times;</span>
-            </button>
-        </div>
-    @endif
-</div>
-
-<div class="container mt-5">
-    <form class="form-inline justify-content-center my-2 mt-2" action="{{ route('admin.rechercherAxeRecherch') }}" method="GET">
-        @csrf
-        <input class="form-control col-lg-8 col-6 col-sm-8 py-4" type="search" name="query" placeholder="Rechercher un axe de recherche" aria-label="Rechercher" value="{{ request('query') }}">
-        <button class="btn btn-primary search-btn ml-2" type="submit">Rechercher</button>
-    </form>
-
-</div>
-
-<div class="container d-flex mt-5 align-items-center">
-    <!-- Utilisation de d-flex et justify-content-between pour espacer les éléments -->
-    <div class="d-flex justify-content-end w-100">
-        <!-- Bouton pour ouvrir le modal pour ajouter un EDP -->
-        <div>
-            <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#addAxeRechModal">
-                Ajouter
-            </button>
-        </div>
-
+    <div class="mb-4">
+        @include("lab.partials.alerts")
     </div>
-</div>
 
+    <!-- Formulaire de recherche -->
+    <div class="card shadow mb-4">
+        <div class="card-body">
+            <form action="{{ route('admin.rechercherAxeRecherch') }}" method="GET" class="mb-0">
+                <div class="input-group">
+                    <input type="text" class="form-control" name="query" 
+                           placeholder="Rechercher un axe de recherche..." 
+                           value="{{ request()->query('query') }}">
+                    <div class="input-group-append">
+                        <button class="btn btn-outline-primary" type="submit">
+                            <i class="fas fa-search"></i> Rechercher
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
 
-<div class="p-5">
-    @if ($axesRecherches->isEmpty())
+    <div class="d-flex justify-content-end align-items-center mb-4">
+        <button type="button" class="btn btn-outline-primary" data-toggle="modal" data-target="#addAxeModal">
+            <i class="fas fa-plus"></i> Ajouter
+        </button>
+    </div>
+
+    <!-- Liste des axes de recherche -->
+    @if ($axeRecherches->isEmpty())
         <div class="alert alert-info" role="alert">
             Aucun axe de recherche disponible.
         </div>
         <div class="d-flex justify-content-center">
-            <img src="{{ asset('assets/img/empty_data.png') }}" alt="aucun article" class="img-fluid" style="width: 350px; height: 350px;">
+            <img src="{{ asset('assets/img/empty_data.png') }}" alt="aucun axe" class="img-fluid" style="width: 350px; height: 350px;">
         </div>
     @else
-        <div class="row row-cols-1 row-cols-md-2 g-4">
-            @foreach ($axesRecherches as $axe)
-                <div class="col mb-4">
-                    <div class="d-flex flex-column rounded shadow bg-white p-3 h-100">
-                        <div class="d-flex">
-                            <div class="ml-3">
-                                <p class="mb-1 font-weight-bold">{{ $axe->titreAxeRech }}</p>
+        <div class="row">
+            @foreach ($axeRecherches as $axe)
+                <div class="col-md-6 mb-4">
+                    <div class="card shadow h-100">
+                        <div class="card-header bg-dark text-white">
+                            <h5 class="card-title mb-0">{{ $axe->titreAxeRech }}</h5>
+                        </div>
+                        <div class="card-body">
+                            <!-- Description -->
+                            @if($axe->descAxeRech)
+                                <p class="card-text">{{ $axe->descAxeRech }}</p>
+                            @endif
 
-                                @if($axe->descAxeRech)
-                                    <p>Description : {{ $axe->descAxeRech }}</p>
-                                @endif
+                            <!-- Statistiques -->
+                            <div class="mt-3">
+                                <p class="mb-1">
+                                    <i class="fas fa-bookmark text-secondary"></i>
+                                    <span class="font-weight-bold">Thèmes associés :</span>
+                                    <span class="badge badge-info">{{ $axe->themes->count() }}</span>
+                                </p>
                             </div>
                         </div>
-                        <div class="d-flex justify-content-end mt-auto">
-                            <!-- Formulaire pour modifier un axe -->
-                            <form action="{{ route('admin.modifierAxeRecherche', $axe->idAxeRech) }}" method="GET">
-                                @csrf
-                                <button class="btn btn-primary mr-2" type="submit">Modifier</button>
-                            </form>
-
-                            <form id="deleteAxeForm" action="{{ route('admin.supprimerAxeRecherche', $axe->idAxeRech) }}" method="POST" style="display: inline;">
-                                @csrf
-                                @method('POST')
-                                <button type="button" class="btn btn-danger" onclick="confirmDelete({{ $axe->idAxeRech }})">
-                                    <i class="fas fa-trash"></i> Supprimer
+                        <div class="card-footer bg-light">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <button type="button" class="btn btn-outline-secondary btn-sm"
+                                        data-toggle="modal" data-target="#detailsModal_{{ $axe->idAxeRech }}">
+                                    <i class="fas fa-info-circle"></i> Détails
                                 </button>
-                            </form>
-
-
-
+                                <div class="d-flex">
+                                    <a href="{{ route('admin.modifierAxeRecherche', $axe->idAxeRech) }}"
+                                       class="btn btn-outline-primary btn-sm mr-2">
+                                        <i class="fas fa-edit"></i> Modifier
+                                    </a>
+                                    <form id="deleteAxeForm" method="POST">
+                                        @csrf
+                                        <button type="button" class="btn btn-outline-danger btn-sm"
+                                                onclick="confirmDelete({{ $axe->idAxeRech }})">
+                                            <i class="fas fa-trash"></i> Supprimer
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
             @endforeach
         </div>
 
+        <!-- Pagination -->
         <div class="d-flex justify-content-center mt-4">
-            {{ $axesRecherches->links('vendor.pagination.bootstrap-4') }}
+            {{ $axeRecherches->links('vendor.pagination.bootstrap-4') }}
         </div>
     @endif
-</div>
 
-
-<!-- Modal pour enregistrer un axe -->
-<div class="modal fade" id="addAxeRechModal" tabindex="-1" aria-labelledby="addAxeModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <form action="{{ route('admin.enregistrerAxeRecherche') }}" method="POST">
-            @csrf
+    <!-- Modal d'ajout -->
+    <div class="modal fade" id="addAxeModal" tabindex="-1" role="dialog" aria-labelledby="addAxeModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
             <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="addAxeModalLabel">Ajouter un Axe de Recherche</h5>
-                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                <form action="{{ route('admin.enregistrerAxeRecherche') }}" method="POST">
+                    @csrf
+                    <div class="modal-header bg-dark text-white">
+                        <h5 class="modal-title" id="addAxeModalLabel">
+                            <i class="fas fa-plus-circle"></i> Ajouter un axe de recherche
+                        </h5>
+                        <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+
+                    <div class="modal-body">
+                        <!-- Informations de l'axe -->
+                        <div class="card shadow-sm mb-4">
+                            <div class="card-header bg-light">
+                                <h6 class="mb-0">
+                                    <i class="fas fa-info-circle"></i> Informations de l'axe
+                                </h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-12">
+                                        <div class="form-group">
+                                            <label for="titreAxeRech" class="font-weight-bold">
+                                                Titre <span class="text-danger">*</span>
+                                            </label>
+                                            <input type="text" class="form-control @error('titreAxeRech') is-invalid @enderror"
+                                                   id="titreAxeRech" name="titreAxeRech" 
+                                                   value="{{ old('titreAxeRech') }}" required>
+                                            @error('titreAxeRech')
+                                                <span class="invalid-feedback">{{ $message }}</span>
+                                            @enderror
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-12">
+                                        <div class="form-group mb-0">
+                                            <label for="descAxeRech" class="font-weight-bold">Description</label>
+                                            <textarea class="form-control @error('descAxeRech') is-invalid @enderror"
+                                                      id="descAxeRech" name="descAxeRech" rows="4"
+                                                      style="resize: none;">{{ old('descAxeRech') }}</textarea>
+                                            @error('descAxeRech')
+                                                <span class="invalid-feedback">{{ $message }}</span>
+                                            @enderror
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="modal-footer bg-light">
+                        <button type="submit" class="btn btn-outline-primary">
+                            <i class="fas fa-save"></i> Enregistrer
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de détails -->
+    @foreach($axeRecherches as $axe)
+    <div class="modal fade" id="detailsModal_{{ $axe->idAxeRech }}" tabindex="-1" role="dialog" aria-labelledby="detailsModalLabel_{{ $axe->idAxeRech }}" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header bg-dark text-white">
+                    <h5 class="modal-title" id="detailsModalLabel_{{ $axe->idAxeRech }}">
+                        <i class="fas fa-info-circle"></i> Détails de l'axe de recherche
+                    </h5>
+                    <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
                         <span aria-hidden="true">&times;</span>
                     </button>
                 </div>
                 <div class="modal-body">
-                    <div class="form-group">
-                        <label for="titreAxeRech">Titre <span class="text-danger">*</span></label>
-                        <input type="text" class="form-control" id="titreAxeRech" name="titreAxeRech" required>
+                    <!-- Informations de base -->
+                    <div class="card shadow-sm mb-4">
+                        <div class="card-header bg-light">
+                            <h6 class="mb-0">
+                                <i class="fas fa-info-circle"></i> Informations générales
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-12">
+                                    <p class="mb-2">
+                                        <span class="font-weight-bold">Titre :</span>
+                                        {{ $axe->titreAxeRech }}
+                                    </p>
+                                    @if($axe->descAxeRech)
+                                        <p class="mb-0">
+                                            <span class="font-weight-bold">Description :</span>
+                                            {{ $axe->descAxeRech }}
+                                        </p>
+                                    @endif
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                    <div class="form-group">
-                        <label for="descAxeRech">Description</label>
-                        <textarea class="form-control" id="descAxeRech" name="descAxeRech"></textarea>
+
+                    <!-- Thèmes associés -->
+                    <div class="card shadow-sm">
+                        <div class="card-header bg-light">
+                            <h6 class="mb-0">
+                                <i class="fas fa-bookmark"></i> Thèmes associés 
+                                <span class="badge badge-info">{{ $axe->themes->count() }}</span>
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            @if($axe->themes->isEmpty())
+                                <p class="text-muted mb-0">Aucun thème associé à cet axe.</p>
+                            @else
+                                <div class="table-responsive">
+                                    <table class="table table-bordered table-hover mb-0">
+                                        <thead class="bg-light">
+                                            <tr>
+                                                <th>Titre</th>
+                                                <th>Description</th>
+                                                <th>État</th>
+                                                <th>Doctorants</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @foreach($axe->themes as $theme)
+                                                <tr>
+                                                    <td>{{ $theme->intituleTheme }}</td>
+                                                    <td>
+                                                        {{ Str::limit($theme->descTheme, 50) }}
+                                                    </td>
+                                                    <td>
+                                                        @if($theme->etatAttribution)
+                                                            <span class="badge badge-success">Attribué</span>
+                                                        @else
+                                                            <span class="badge badge-secondary">Non attribué</span>
+                                                        @endif
+                                                    </td>
+                                                    <td class="text-center">
+                                                        <span class="badge badge-info">
+                                                            {{ $theme->doctorants->count() }}
+                                                        </span>
+                                                    </td>
+                                                </tr>
+                                            @endforeach
+                                        </tbody>
+                                    </table>
+                                </div>
+                            @endif
+                        </div>
                     </div>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Annuler</button>
-                    <button type="submit" class="btn btn-primary">Enregistrer</button>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-outline-secondary" data-dismiss="modal">
+                        <i class="fas fa-times"></i> Fermer
+                    </button>
                 </div>
             </div>
-        </form>
+        </div>
     </div>
+    @endforeach
 </div>
 
-@section('scripts')
+<!-- Script pour la confirmation de suppression -->
 <script>
     function confirmDelete(axeId) {
         Swal.fire({
-            title: "Êtes-vous sûr de vouloir supprimer cet axe de recherche ?",
+            title: "Êtes-vous sûr de vouloir supprimer cet axe ?",
+            text: "Cette action est irréversible et ne peut être effectuée si des thèmes sont associés.",
             icon: "warning",
             showCancelButton: true,
             confirmButtonColor: "#3085d6",
@@ -166,5 +286,26 @@
         });
     }
 </script>
+
 @endsection
+
+@section('styles')
+<style>
+    .modal-dialog {
+        margin-top: 2rem;
+        display: flex;
+        align-items: flex-start;
+        min-height: calc(100% - 4rem);
+    }
+
+    .modal {
+        overflow-y: auto;
+    }
+
+    .modal-dialog.modal-lg {
+        max-width: 800px;
+        margin-left: auto;
+        margin-right: auto;
+    }
+</style>
 @endsection

@@ -85,9 +85,7 @@ Si vous utilisez un gestionnaire de paquets (npm), importez SweetAlert2 dans vos
 import Swal from 'sweetalert2';
 window.Swal = Swal;
 
-
 ## faire npm install
-
 
 ## afin d'utiliser mix pour la compilation faire 
 
@@ -105,6 +103,7 @@ mix.js('resources/js/main.js', 'public/assets/js')
 //remplaceer
 il faut changer simplement en require 
 import './bootstrap';
+
 // Par celle-ci
 require('./bootstrap');
 
@@ -158,3 +157,8 @@ Modifiez votre code pour inclure les fichiers locaux : Dans votre fichier HTML, 
 <script src="{{ asset('assets/select2/select2.min.js') }}"></script>
 
 on peut l'utiliser maintenant 
+
+
+php artisan migrate:fresh --seed
+php artisan db:wipe
+hp artisan migrate

@@ -33,12 +33,12 @@
                 <div class="form-group mb-4 mt-2">
                     <label for="email">Email</label>
                     <input type="email"
-                           class="form-control @error('email_visit') is-invalid @enderror"
+                           class="form-control @error('email') is-invalid @enderror"
                            id="email"
-                           name="email_visit"
+                           name="email"
                            required autocomplete="email"
-                           autofocus value="{{ old('email_visit') }}">
-                    @error('email_visit')
+                           autofocus value="{{ old('email') }}">
+                    @error('email')
                         <small class="text-danger">{{ $message }}</small>
                     @enderror
                 </div>
@@ -47,16 +47,16 @@
                     <label for="password">Mot de passe</label>
                     <div class="input-group">
                         <input type="password"
-                               class="form-control @error('password_visit') is-invalid @enderror"
+                               class="form-control @error('password') is-invalid @enderror"
                                id="password"
-                               name="password_visit" required value="{{ old('password_visit') }}">
+                               name="password" required value="{{ old('password') }}">
                         <div class="input-group-append">
                             <span class="input-group-text" id="toggle-password1">
                                 <i class="fa fa-eye-slash" aria-hidden="true"></i>
                             </span>
                         </div>
                     </div>
-                    @error('password_visit')
+                    @error('password')
                         <small class="text-danger">{{ $message }}</small>
                     @enderror
                 </div>

@@ -117,7 +117,7 @@
                 </div >
 
                 {{-- Affichage du bouton d'authentification si l'utilisateur n'est pas authentifié --}}
-                @if(!Auth::guard('visiteur')->check() && !Auth::guard('chercheur')->check() && !Auth::guard('admin')->check())
+                @if(!Auth::guard('doctorant')->check() && !Auth::guard('chercheur')->check() && !Auth::guard('admin')->check())
                     <div class="text-center mr-5" id="btnAuthification">
                         <a href="{{route('login')}}" class="btn btn-outline-success btn_authentifie mr-5">SE CONNECTER</a>
                     </div>
@@ -126,35 +126,20 @@
             </div>
 
             {{-- Affichage des informations utilisateur si l'utilisateur est authentifié --}}
-            @if(Auth::guard('visiteur')->check())
-                <div class="text-center mr-5" style="padding-right: 5%">
-                    {{ Auth::guard('visiteur')->user()->nom }}
-                    <div class="btn-group mr-4">
-                        <button type="button" class="btn btn-light dropdown-toggle" data-toggle="dropdown" aria-expanded="false">
-                            {{-- Affichage du nom de l'utilisateur ou autre information pertinente --}}
-                        </button>
-                        <div class="dropdown-menu">
-                            <form action="{{ route('logout') }}" method="GET">
-                                @csrf
-                                <button type="submit" class="dropdown-item">Se déconnecter</button>
-                            </form>
-                        </div>
 
-                    </div>
-                </div>
-            @elseif(Auth::guard('chercheur')->check())
+            @if(Auth::guard('chercheur')->check())
                 <div class="text-center mr-5 pr-5">
                     {{ Auth::guard('chercheur')->user()->nomCherch . " " . Auth::guard('chercheur')->user()->prenomCherch }}
                     <div class="btn-group mr-5">
                         <button type="button" class="btn btn-light dropdown-toggle" data-toggle="dropdown" aria-expanded="false">
-                            {{-- Affichage du nom de l'utilisateur ou autre information pertinente --}}
                         </button>
                         <div class="dropdown-menu mr-5">
-                            <form action="{{ route('logout') }}" method="POST">
-                                @csrf
-                                <button type="submit" class="dropdown-item">Se déconnecter</button>
-                            </form>
-                            <a href="{{ route('chercheur.espace') }}" class="dropdown-item">Mon espace</a>
+                            <div>
+                                <a href="{{ route('logout') }}" class="dropdown-item" >Se déconnecter</a>
+                            </div>
+                            <div>
+                                <a href="{{ route('chercheur.espace') }}" class="dropdown-item">Mon espace</a>
+                            </div>
                         </div>
                     </div>
 
@@ -168,11 +153,12 @@
                         <button type="button" class="btn btn-light dropdown-toggle" data-toggle="dropdown" aria-expanded="false">
                         </button>
                         <div class="dropdown-menu">
-                            <form action="{{ route('logout') }}" method="POST">
-                                @csrf
-                                <a type="submit" class="dropdown-item">Se déconnecter</a>
-                            </form>
-                            <a href="{{ route('admin.espace') }}" class="dropdown-item">Mon espace</a>
+                            <div>
+                                <a href="{{ route('logout') }}" class="dropdown-item" >Se déconnecter</a>
+                            </div>
+                            <div>
+                                <a href="{{ route('admin.espace') }}" class="dropdown-item">Mon espace</a>
+                            </div>
                         </div>
                     </div>
                     {{-- <a href="{{ route('admin.profil') }}" class="ml-3 mr-5">
@@ -180,6 +166,26 @@
                     </a> --}}
 
                 </div>
+
+            @elseif(Auth::guard('doctorant')->check())
+
+                <div class="text-center mr-5 pr-5">
+                    {{ Auth::guard('doctorant')->user()->nomDoc . " " . Auth::guard('doctorant')->user()->prenomDoc }}
+                    <div class="btn-group mr-5">
+                        <button type="button" class="btn btn-light dropdown-toggle" data-toggle="dropdown" aria-expanded="false">
+                        </button>
+                        <div class="dropdown-menu mr-5">
+                            <div>
+                                <a href="{{ route('logout') }}" class="dropdown-item" >Se déconnecter</a>
+                            </div>
+                            <div>
+                                <a href="{{ route('doctorant.espace') }}" class="dropdown-item">Mon espace</a>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
             @endif
 
         </nav>

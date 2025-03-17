@@ -1,7 +1,7 @@
 @extends('baseVisite')
 
 {{-- Titre de la page --}}
-@section('title', 'Publilab-Articles')
+@section('title', 'Publilab')
 @section('bg-color', 'bg-white')
 
 @php
@@ -12,42 +12,66 @@
 @section('contenue-main')
 <div class="custom-article-height mx-4">
     <div class="container mt-5">
-        <form class="form-inline justify-content-center my-2 mt-2" action="{{ route('rechercherArticle')}}" method="GET">
-            @csrf
-            <input class="form-control col-lg-8 col-6 col-sm-8 py-4" type="search" name="query" placeholder="Rechercher un article" aria-label="Rechercher" value="{{ old('query', $query ?? '') }}">
-            <button class="btn btn-primary search-btn ml-2" type="submit">Rechercher</button>
-        </form>
-    </div>
+        <div class="row mb-4">
+            <!-- Filtre par année (passe en pleine largeur sur mobile) -->
+            <div class="col-12 col-md-4 mb-3 mb-md-0">
+                <form action="{{ route('rechercherArticle') }}" method="GET">
+                    <div class="mb-3">
+                        <label for="annee" class="text-secondary small mb-1">Année</label>
+                        <select class="custom-select" id="annee" name="annee" onchange="this.form.submit()">
+                            <option value="Tous">Toutes les années</option>
+                            @foreach ($annees as $anneeOption)
+                                <option value="{{ $anneeOption }}" {{ isset($annee) && $annee == $anneeOption ? 'selected' : '' }}>
+                                    {{ $anneeOption }}
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+                </form>
+            </div>
 
-    <div class="container d-flex mt-5 align-items-center">
-        {{-- <div><ul><li class="text-secondary col-5 ml-5">Année</li></ul></div> --}}
-        <div class="col-7">
-            <form action="{{ route('rechercherArticle') }}" method="GET" class="w-100">
-                @csrf
-                <select
-                    title="Filtrer par année"
-                    class="custom-select col-4 col-lg-2 col-sm-6 col-md-3"
-                    name="annee"
-                    onchange="this.form.submit()"
-                >
-                    <option value="Tous" {{ old('annee', $annee ?? 'Tous') === 'Tous' ? 'selected' : '' }}>Tous</option>
-                    @foreach ($annees as $anneeOption)
-                        <option value="{{ $anneeOption }}" {{ old('annee', $annee ?? 'Tous') == $anneeOption ? 'selected' : '' }}>
-                            {{ $anneeOption }}
-                        </option>
-                    @endforeach
-                </select>
+            <!-- Recherche (passe en pleine largeur sur mobile) -->
+            <div class="col-12 col-md-8">
+                <form action="{{ route('rechercherArticle') }}" method="GET">
+                    <div class="mb-3">
+                        <label class="text-secondary small mb-1">Rechercher</label>
+                        <div class="input-group">
+                            <input class="form-control" type="search" name="query"
+                                placeholder="Rechercher un article" value="{{ $query ?? '' }}">
+                            <div class="input-group-append">
+                                <button class="btn btn-primary" type="submit">Rechercher</button>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
 
-            </form>
-
+        <!-- Affichage du nombre d'articles -->
+        <div class="mb-2 mt-3">
+            <div class="d-flex align-items-center shadow-sm p-4">
+                <span class="badge badge-primary badge-pill mr-2">{{ $articles->total() }}</span>
+                <span class="text-muted">
+                    @if($articles->total() > 1)
+                        Articles trouvés
+                    @else
+                        Article trouvé
+                    @endif
+                    @if(isset($query) && !empty($query))
+                        pour "<span class="font-weight-medium text-primary">{{ $query }}</span>"
+                    @endif
+                    @if(isset($annee) && !empty($annee) && $annee !== 'Tous')
+                        en <span class="font-weight-medium text-primary">{{ $annee }}</span>
+                    @endif
+                </span>
+            </div>
         </div>
     </div>
 
     <div class="p-5">
         @if ($articles->isEmpty())
             <div class="alert alert-info" role="alert">
-                Aucun article n'a été publié.
-            </div>
+                Aucun article.
             <div class="d-flex justify-content-center">
                 <img src="{{ asset('assets/img/empty_data.png') }}" alt="aucun article" class="img-fluid" style="width: 350px; height: 350px;">
             </div>
@@ -59,49 +83,80 @@
                             <div class="d-flex">
                                 <div class="ml-3">
                                     <!-- Titre de l'article avec les auteurs -->
-                                    <p class="mb-1 ">
+                                    <p class="mb-1">
                                         @foreach ($article->chercheurs as $chercheur)
-                                            {{ $chercheur->prenomCherch }} {{ strtoupper($chercheur->nomCherch) }},
+                                            {{ $chercheur->prenomCherch }} {{ strtoupper($chercheur->nomCherch) }}@if (!$loop->last),@endif
                                         @endforeach
+
+                                        @if($article->chercheurs->isNotEmpty() && $article->doctorants->isNotEmpty())
+                                            ,
+                                        @endif
+
                                         @foreach ($article->doctorants as $doctorant)
                                             {{ $doctorant->prenomDoc }} {{ strtoupper($doctorant->nomDoc) }}
-                                            @if ($doctorant->encadrants->isNotEmpty())
-                                                (encadré par
-                                                @foreach ($doctorant->encadrants as $encadrant)
-                                                    {{ $encadrant->prenomCherch }} {{ strtoupper($encadrant->nomCherch) }}
-                                                @endforeach)
-                                            @endif
+                                            @if (!$loop->last),@endif
                                         @endforeach
+
                                         <span class="font-weight-bold">{{ $article->titreArticle }}</span>
                                     </p>
 
-                                    <!-- Informations de publication et DOI -->
-                                    @foreach ($article->revues as $revue)
+                                    <!-- Informations de publication -->
+                                    @if($article->publication)
                                         <p>
-                                            <em>{{ $revue->nomRevue }}</em>
-                                            @if (!empty($revue->pivot->datePubArt))
-                                                , {{ \Carbon\Carbon::parse($revue->pivot->datePubArt)->format('d M Y') }}
+                                            <em>{{ $article->publication->titrePub }}</em>
+                                            @if($article->datePubArt)
+                                                , {{ \Carbon\Carbon::parse($article->datePubArt)->format('d M Y') }}
                                             @endif
-                                            @if (!empty($revue->pivot->volume))
-                                                ; Vol.{{ $revue->pivot->volume }}
+                                            @if($article->volume)
+                                                ; Vol.{{ $article->volume }}
                                             @endif
-                                            @if (!empty($revue->pivot->pageDebut) && !empty($revue->pivot->pageFin))
-                                                pp.{{ $revue->pivot->pageDebut }}-{{ $revue->pivot->pageFin }}
+                                            @if($article->numero)
+                                                , N°{{ $article->numero }}
                                             @endif
-                                            @if (!empty($article->doi))
+                                            @if($article->pageDebut && $article->pageFin)
+                                                , pp.{{ $article->pageDebut }}-{{ $article->pageFin }}
+                                            @endif
+                                            @if($article->doi)
                                                 , DOI: {{ $article->doi }}
                                             @endif
                                         </p>
-                                    @endforeach
 
-                                    <!-- Indexation de la revue -->
-                                    @foreach ($article->revues as $revue)
-                                        @if ($revue->bdIndexations->isNotEmpty())
-                                            @foreach ($revue->bdIndexations as $bdIndexation)
-                                                <p class="text-muted">Indexé {{ $bdIndexation->nomBDInd }}</p>
-                                            @endforeach
+                                        <!-- Éditeur de la publication -->
+                                        @if($article->publication->editeurPub)
+                                            <p class="text-muted">
+                                                Éditeur: {{ $article->publication->editeurPub }}
+                                            </p>
                                         @endif
-                                    @endforeach
+
+                                        <!-- Indexation de la publication -->
+                                        @if($article->publication->bdIndexations && $article->publication->bdIndexations->isNotEmpty())
+                                            <p class="text-muted">
+                                                Indexé dans:
+                                                @foreach($article->publication->bdIndexations as $bdIndexation)
+                                                    {{ $bdIndexation->nomBDIndex }}@if(!$loop->last), @endif
+                                                @endforeach
+                                            </p>
+                                        @endif
+                                    @endif
+
+                                    @if($article->resumeArticle)
+                                        <div class="mt-2">
+                                            <p class="mb-1"><strong>Résumé :</strong></p>
+                                            <p class="text-muted">
+                                                {{ Str::words($article->resumeArticle, 15, '...') }}
+                                                <a href="#" data-toggle="modal" data-target="#detailsArticleModal-{{ $article->idArticle }}" class="text-primary">Lire plus</a>
+                                            </p>
+                                        </div>
+                                    @endif
+
+                                    <!-- Lien vers l'article si disponible -->
+                                    @if($article->lienArticle)
+                                        <p>
+                                            <a href="{{ $article->lienArticle }}" target="_blank" class="btn btn-sm btn-outline-primary">
+                                                <i class="fas fa-external-link-alt"></i> Accéder à l'article
+                                            </a>
+                                        </p>
+                                    @endif
                                 </div>
                             </div>
 
@@ -126,3 +181,6 @@
     document.querySelector('.navbar').classList.add('custom-nav');
 </script>
 @endsection
+
+
+

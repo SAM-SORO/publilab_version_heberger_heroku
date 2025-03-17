@@ -23,39 +23,73 @@ class GradeController extends Controller
     public function create(Request $request)
     {
         $validated = $request->validate([
-            'nomGrade' => 'required|string|max:255',
-            'sigleGrade' => 'nullable|string|max:255',
+            'nomGrade' => 'required|string|max:255|unique:grades,nomGrade',
+            'sigleGrade' => 'required|string|max:50|unique:grades,sigleGrade',
+        ], [
+            'nomGrade.required' => 'Le nom du grade est obligatoire.',
+            'nomGrade.unique' => 'Ce nom de grade existe déjà.',
+            'sigleGrade.required' => 'Le sigle du grade est obligatoire.',
+            'sigleGrade.unique' => 'Ce sigle de grade existe déjà.',
         ]);
 
-        Grade::create($validated);
-
-        return redirect()->route('admin.listeGrade')->with('success', 'Grade ajouté avec succès.');
+        try {
+            Grade::create($validated);
+            return redirect()->route('admin.listeGrade')
+                ->with('success', 'Grade ajouté avec succès.');
+        } catch (\Exception $e) {
+            return redirect()->back()
+                ->withInput()
+                ->with('error', 'Erreur lors de la création : ' . $e->getMessage());
+        }
     }
 
     // Modifier un grade (optionnel)
     public function edit($id)
     {
-        $grade = Grade::findOrFail($id);
-        return view('lab.admin.modifier_grade', compact('grade'));
+        try {
+            $grade = Grade::with(['chercheurs' => function($query) {
+                $query->orderBy('chercheur_grade.dateGrade', 'desc');
+            }])->findOrFail($id);
+
+            return view('lab.admin.modifier_grade', compact('grade'));
+        } catch (\Exception $e) {
+            return redirect()->route('admin.listeGrade')
+                ->with('error', 'Grade non trouvé.');
+        }
     }
 
 
     public function search(Request $request)
     {
-        // Récupérer la requête de recherche
-        $query = $request->input('query');
+        try {
+            $query = $request->input('query');
 
-        // Effectuer la recherche dans la table 'grades'
-        $grades = Grade::query()
-            ->when($query, function ($queryBuilder) use ($query) {
-                // Recherche sur les champs 'nomGrade' et 'sigleGrade'
-                $queryBuilder->where('nomGrade', 'like', '%' . $query . '%')
-                             ->orWhere('sigleGrade', 'like', '%' . $query . '%');
+            // Si la recherche est vide, retourner tous les grades
+            if (empty($query)) {
+                return redirect()->route('admin.listeGrade');
+            }
+
+            $grades = Grade::where(function($q) use ($query) {
+                // Recherche sur le nom et le sigle du grade
+                $q->where('nomGrade', 'like', '%' . $query . '%')
+                  ->orWhere('sigleGrade', 'like', '%' . $query . '%');
+
+                // Recherche sur les chercheurs associés
+                $q->orWhereHas('chercheurs', function($subQuery) use ($query) {
+                    $subQuery->where(DB::raw("CONCAT(nomCherch, ' ', prenomCherch)"), 'like', '%' . $query . '%')
+                            ->orWhere(DB::raw("CONCAT(prenomCherch, ' ', nomCherch)"), 'like', '%' . $query . '%');
+                });
             })
-            ->paginate(10);  // Pagination des résultats
+            ->orderByDesc('nomGrade')
+            ->paginate(10)
+            ->withQueryString();
 
-        // Retourner la vue avec les résultats
-        return view('lab.admin.liste_grade', compact('grades', 'query'));
+            return view('lab.admin.liste_grade', compact('grades', 'query'));
+
+        } catch (\Exception $e) {
+            return redirect()->route('admin.listeGrade')
+                ->with('error', 'Erreur lors de la recherche : ' . $e->getMessage());
+        }
     }
 
 
@@ -64,44 +98,22 @@ class GradeController extends Controller
      */
     public function update(Request $request, $id)
     {
-        // Début de la transaction
-        DB::beginTransaction();
-
         try {
-            // Validation des données
-            $validated = $request->validate([
-                'nomGrade' => 'required|string|max:255',
-                'sigleGrade' => 'nullable|string|max:255',
-            ], [
-                'nomGrade.required' => 'Le nom du grade est obligatoire.',
-                'nomGrade.max' => 'Le nom du grade ne doit pas dépasser 255 caractères.',
-                'sigleGrade.max' => 'Le sigle du grade ne doit pas dépasser 255 caractères.',
-            ]);
-
-            // Récupérer le grade
             $grade = Grade::findOrFail($id);
 
-            // Mettre à jour les informations du grade
-            $grade->update([
-                'nomGrade' => $validated['nomGrade'],
-                'sigleGrade' => $validated['sigleGrade'],
+            $validated = $request->validate([
+                'nomGrade' => 'required|string|max:255|unique:grades,nomGrade,' . $id . ',idGrade',
+                'sigleGrade' => 'required|string|max:50|unique:grades,sigleGrade,' . $id . ',idGrade',
             ]);
 
-            // Commit de la transaction
-            DB::commit();
+            $grade->update($validated);
 
-            // Rediriger avec un message de succès
             return redirect()->route('admin.listeGrade')
                 ->with('success', 'Grade modifié avec succès.');
-
         } catch (\Exception $e) {
-            // Annuler la transaction en cas d'erreur
-            DB::rollBack();
-
-            // Rediriger avec un message d'erreur
             return redirect()->back()
                 ->withInput()
-                ->with('error', 'Une erreur est survenue lors de la modification du grade : ' . $e->getMessage());
+                ->with('error', 'Erreur lors de la modification : ' . $e->getMessage());
         }
     }
 
@@ -110,27 +122,21 @@ class GradeController extends Controller
         DB::beginTransaction();
 
         try {
-            // Récupérer le grade à supprimer
             $grade = Grade::findOrFail($id);
 
-            // Dissocier les chercheurs associés à ce grade
-            $grade->chercheurs()->detach();
+            if ($grade->isUsed()) {
+                throw new \Exception('Impossible de supprimer ce grade car il est actuellement attribué à des chercheurs.');
+            }
 
-            // Supprimer le grade
             $grade->delete();
 
-            // Commit de la transaction
             DB::commit();
-
-            // Rediriger avec un message de succès
             return redirect()->route('admin.listeGrade')
-                            ->with('success', 'Grade supprimé avec succès.');
+                ->with('success', 'Grade supprimé avec succès.');
         } catch (\Exception $e) {
             DB::rollBack();
-
-            // Rediriger avec un message d'erreur
             return redirect()->route('admin.listeGrade')
-                            ->with('error', 'Une erreur est survenue lors de la suppression du grade. Détails: ' . $e->getMessage());
+                ->with('error', $e->getMessage());
         }
     }
 

@@ -3,244 +3,808 @@
 namespace App\Http\Controllers;
 
 use App\Models\Doctorant;
+use App\Models\Article;
+use App\Models\Revue;
 use App\Models\Theme;
+use App\Models\TypeArticle;
 use App\Models\Chercheur;
+use App\Models\Publication;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Validator;
 
 class DoctorantController extends Controller
 {
     public function index()
     {
-        // Récupérer les doctorants triés par date de création (ou un autre champ pertinent) avec les relations 'theme' et 'encadrants'
-        $doctorants = Doctorant::with(['theme', 'encadrants'])
-            ->orderByDesc('created_at') // Tri par date de création (modifiez ce champ selon vos besoins)
-            ->paginate(10); // Pagination avec 10 résultats par page
+        // Récupérer le doctorant connecté
+        $doctorantConnecte = auth()->user();
 
-        // Récupérer tous les thèmes pour l'affichage dans la vue
-        $themes = Theme::all();
+        // Vérifier si un doctorant est connecté
+        if (!$doctorantConnecte) {
+            return redirect()->route('login')->with('error', 'Vous devez être connecté pour accéder à cette page.');
+        }
 
-        // Récupérer tous les chercheurs pour l'affichage dans la vue
-        $chercheurs = Chercheur::all();
+        // Compter le nombre d'articles du doctorant
+        $NbreArticles = Article::whereHas('doctorants', function ($query) use ($doctorantConnecte) {
+            $query->where('doctorant_article_chercheur.idDoc', $doctorantConnecte->idDoc);
+        })->count();
 
-        // Retourner la vue avec les données
-        return view('lab.admin.liste_doctorant', compact('doctorants', 'themes', 'chercheurs'));
+        // Récupérer les articles du doctorant
+        $articles = Article::whereHas('doctorants', function ($query) use ($doctorantConnecte) {
+            $query->where('doctorant_article_chercheur.idDoc', $doctorantConnecte->idDoc);
+        })->with(['publication', 'typeArticle'])->get();
+
+        return view('lab.doctorant.index', compact('doctorantConnecte', 'NbreArticles', 'articles'));
     }
 
+    public function listeArticles(Request $request)
+    {
+        try {
+            $doctorant = Auth::user();
 
+            // Initialiser la requête de base pour récupérer les articles du doctorant connecté
+            $articlesQuery = Article::with(['publication', 'typeArticle', 'chercheurs', 'doctorants'])
+                ->whereHas('doctorants', function($q) use ($doctorant) {
+                    $q->where('doctorants.idDoc', $doctorant->idDoc);
+                });
+
+            // Récupérer les paramètres de filtre
+            $query = $request->input('query');
+            $annee = $request->input('annee');
+            $typeArticleId = $request->input('typeArticle');
+
+            // Filtre par mot-clé
+            if ($query) {
+                $articlesQuery->where(function ($queryBuilder) use ($query) {
+                    // Recherche dans les colonnes de l'article
+                    $queryBuilder->where('titreArticle', 'like', '%' . $query . '%')
+                        ->orWhere('resumeArticle', 'like', '%' . $query . '%')
+                        ->orWhere('doi', 'like', '%' . $query . '%');
+
+                    // Recherche dans la publication (titre et éditeur)
+                    $queryBuilder->orWhereHas('publication', function ($pubQuery) use ($query) {
+                        $pubQuery->where('titrePub', 'like', '%' . $query . '%')
+                            ->orWhere('editeurPub', 'like', '%' . $query . '%');
+                    });
+
+                    // Recherche par chercheur (nom + prénom)
+                    $queryBuilder->orWhereHas('chercheurs', function ($chercheurQuery) use ($query) {
+                        $chercheurQuery->whereRaw("LOWER(CONCAT(TRIM(prenomCherch), ' ', TRIM(nomCherch))) LIKE LOWER(?)", ['%' . trim($query) . '%'])
+                            ->orWhereRaw("LOWER(CONCAT(TRIM(nomCherch), ' ', TRIM(prenomCherch))) LIKE LOWER(?)", ['%' . trim($query) . '%'])
+                            ->orWhere('prenomCherch', 'like', '%' . $query . '%')
+                            ->orWhere('nomCherch', 'like', '%' . $query . '%');
+                    });
+
+                    // Recherche par doctorant (nom + prénom)
+                    $queryBuilder->orWhereHas('doctorants', function ($doctorantQuery) use ($query) {
+                        $doctorantQuery->whereRaw("LOWER(CONCAT(TRIM(prenomDoc), ' ', TRIM(nomDoc))) LIKE LOWER(?)", ['%' . trim($query) . '%'])
+                            ->orWhereRaw("LOWER(CONCAT(TRIM(nomDoc), ' ', TRIM(prenomDoc))) LIKE LOWER(?)", ['%' . trim($query) . '%'])
+                            ->orWhere('prenomDoc', 'like', '%' . $query . '%')
+                            ->orWhere('nomDoc', 'like', '%' . $query . '%');
+                    });
+                });
+            }
+
+            // Filtre par année
+            if ($annee && $annee != 'Tous') {
+                $articlesQuery->whereYear('datePubArt', $annee);
+            }
+
+            // Filtre par type d'article
+            if ($typeArticleId && $typeArticleId != 'Tous') {
+                $articlesQuery->where('idTypeArticle', $typeArticleId);
+            }
+
+            // Récupérer les articles filtrés et paginés
+            $articles = $articlesQuery->orderBy('created_at', 'desc')->paginate(12);
+
+            // Conserver les paramètres de filtre dans la pagination
+            $articles->appends([
+                'query' => $query,
+                'annee' => $annee,
+                'typeArticle' => $typeArticleId
+            ]);
+
+            // Récupérer les années distinctes pour le filtre
+            $annees = DB::table('articles')
+                ->selectRaw('YEAR(datePubArt) as year')
+                ->distinct()
+                ->whereNotNull('datePubArt')
+                ->orderBy('year', 'desc')
+                ->pluck('year');
+
+            // Récupérer les données pour les autres filtres et formulaires
+            $publications = Publication::orderBy('titrePub', 'asc')->get();
+            $chercheurs = Chercheur::orderBy('nomCherch', 'asc')
+                        ->orderBy('prenomCherch', 'asc')
+                        ->get();
+            $doctorants = Doctorant::orderBy('nomDoc', 'asc')
+                        ->orderBy('prenomDoc', 'asc')
+                        ->get();
+            $typeArticles = TypeArticle::orderBy('nomTypeArticle', 'asc')->get();
+
+            // Variables pour les filtres actifs
+            $typeArticleId = $typeArticleId ?? null;
+
+            return view('lab.doctorant.liste_article', compact(
+                'articles',
+                'annees',
+                'publications',
+                'typeArticles',
+                'chercheurs',
+                'doctorants',
+                'query',
+                'annee',
+                'typeArticleId'
+            ));
+
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'Une erreur est survenue : ' . $e->getMessage());
+        }
+    }
+
+    public function enregistrerArticle(Request $request)
+    {
+        $validatedData = $request->validate([
+            'titreArticle' => 'required|string|max:200',
+            'lienArticle' => 'nullable|string|url',
+            'resumeArticle' => 'nullable|string',
+            'doi' => 'nullable|string|max:100',
+            'chercheurs' => 'required|array',
+            'chercheurs.*' => 'exists:chercheurs,idCherch',
+            'idPub' => 'nullable|exists:publications,idPub',
+            'datePubArt' => 'nullable|date',
+            'volume' => 'nullable|integer',
+            'numero' => 'nullable|integer',
+            'pageDebut' => 'nullable|integer|min:1',
+            'pageFin' => 'nullable|integer|gte:pageDebut',
+            'idTypeArticle' => 'nullable|exists:type_articles,idTypeArticle'
+        ]);
+
+        DB::beginTransaction();
+
+        try {
+            // Créer un nouvel article
+            $article = new Article();
+            $article->titreArticle = $validatedData['titreArticle'];
+            $article->lienArticle = $validatedData['lienArticle'] ?? null;
+            $article->resumeArticle = $validatedData['resumeArticle'] ?? null;
+            $article->doi = $validatedData['doi'] ?? null;
+            $article->datePubArt = $validatedData['datePubArt'] ?? null;
+            $article->numero = $validatedData['numero'] ?? null;
+            $article->volume = $validatedData['volume'] ?? null;
+            $article->pageDebut = $validatedData['pageDebut'] ?? null;
+            $article->pageFin = $validatedData['pageFin'] ?? null;
+            $article->idPub = $validatedData['idPub'] ?? null;
+            $article->idTypeArticle = $validatedData['idTypeArticle'] ?? null;
+            $article->save();
+
+            // Récupérer le doctorant connecté
+            $doctorantConnecte = Auth::user();
+
+            // S'assurer que des chercheurs sont sélectionnés
+            if (empty($validatedData['chercheurs'])) {
+                // Si aucun chercheur n'est sélectionné, on ne peut pas créer l'entrée dans doctorant_article_chercheur
+                DB::rollback();
+                return redirect()->back()->with('error', "Vous devez sélectionner au moins un chercheur pour cet article.");
+            }
+
+            // Pour chaque chercheur sélectionné, créer une entrée dans doctorant_article_chercheur
+            foreach ($validatedData['chercheurs'] as $chercheurId) {
+                DB::table('doctorant_article_chercheur')->insert([
+                    'idArticle' => $article->idArticle,
+                    'idDoc' => $doctorantConnecte->idDoc,
+                    'idCherch' => $chercheurId
+                ]);
+            }
+
+            DB::commit();
+            return redirect()->route('doctorant.listeArticles')->with('success', 'Article enregistré avec succès.');
+        } catch (\Exception $e) {
+            DB::rollback();
+            return redirect()->back()->with('error', "Une erreur est survenue : " . $e->getMessage());
+        }
+    }
+
+    public function modifierArticle($idArticle)
+    {
+        try {
+            // Récupérer l'article avec ses relations
+            $article = Article::with(['publication', 'chercheurs', 'doctorants'])->findOrFail($idArticle);
+
+            // Vérifier si le doctorant connecté est autorisé à modifier cet article
+            $doctorantConnecte = Auth::user();
+            $isAuthorized = DB::table('doctorant_article_chercheur')
+                ->where('idArticle', $idArticle)
+                ->where('idDoc', $doctorantConnecte->idDoc)
+                ->exists();
+
+            if (!$isAuthorized) {
+                return redirect()->route('doctorant.listeArticles')
+                    ->with('error', 'Vous n\'êtes pas autorisé à modifier cet article.');
+            }
+
+            // Récupérer les données nécessaires pour le formulaire
+            $publications = Publication::orderBy('titrePub', 'asc')->get();
+            $chercheurs = Chercheur::orderBy('nomCherch', 'asc')
+                        ->orderBy('prenomCherch', 'asc')
+                        ->get();
+            $typeArticles = TypeArticle::orderBy('nomTypeArticle', 'asc')->get();
+
+            // Récupérer les IDs des chercheurs associés à cet article pour ce doctorant
+            $articleChercheurs = DB::table('doctorant_article_chercheur')
+                ->where('idArticle', $idArticle)
+                ->where('idDoc', $doctorantConnecte->idDoc)
+                ->pluck('idCherch')
+                ->toArray();
+
+            return view('lab.doctorant.modifier_article', compact(
+                'article',
+                'publications',
+                'chercheurs',
+                'typeArticles',
+                'articleChercheurs'
+            ));
+
+        } catch (\Exception $e) {
+            return redirect()->route('doctorant.listeArticles')
+                ->with('error', 'Une erreur est survenue : ' . $e->getMessage());
+        }
+    }
+
+    public function updateArticle(Request $request, $idArticle)
+    {
+        $validatedData = $request->validate([
+            'titreArticle' => 'required|string|max:200',
+            'lienArticle' => 'nullable|string|url',
+            'resumeArticle' => 'nullable|string',
+            'doi' => 'nullable|string|max:100',
+            'chercheurs' => 'required|array',
+            'chercheurs.*' => 'exists:chercheurs,idCherch',
+            'idPub' => 'nullable|exists:publications,idPub',
+            'datePubArt' => 'nullable|date',
+            'volume' => 'nullable|integer',
+            'numero' => 'nullable|integer',
+            'pageDebut' => 'nullable|integer|min:1',
+            'pageFin' => 'nullable|integer|gte:pageDebut',
+            'idTypeArticle' => 'nullable|exists:type_articles,idTypeArticle'
+        ]);
+
+        DB::beginTransaction();
+
+        try {
+            // Récupérer l'article
+            $article = Article::findOrFail($idArticle);
+
+            // Vérifier si le doctorant connecté est autorisé à modifier cet article
+            $doctorantConnecte = Auth::user();
+            $isAuthorized = DB::table('doctorant_article_chercheur')
+                ->where('idArticle', $idArticle)
+                ->where('idDoc', $doctorantConnecte->idDoc)
+                ->exists();
+
+            if (!$isAuthorized) {
+                return redirect()->route('doctorant.listeArticles')
+                    ->with('error', 'Vous n\'êtes pas autorisé à modifier cet article.');
+            }
+
+            // Mettre à jour les informations de l'article
+            $article->titreArticle = $validatedData['titreArticle'];
+            $article->lienArticle = $validatedData['lienArticle'] ?? null;
+            $article->resumeArticle = $validatedData['resumeArticle'] ?? null;
+            $article->doi = $validatedData['doi'] ?? null;
+            $article->datePubArt = $validatedData['datePubArt'] ?? null;
+            $article->numero = $validatedData['numero'] ?? null;
+            $article->volume = $validatedData['volume'] ?? null;
+            $article->pageDebut = $validatedData['pageDebut'] ?? null;
+            $article->pageFin = $validatedData['pageFin'] ?? null;
+            $article->idPub = $validatedData['idPub'] ?? null;
+            $article->idTypeArticle = $validatedData['idTypeArticle'] ?? null;
+            $article->save();
+
+            // Supprimer les anciennes relations doctorant-article-chercheur
+            DB::table('doctorant_article_chercheur')
+                ->where('idArticle', $idArticle)
+                ->where('idDoc', $doctorantConnecte->idDoc)
+                ->delete();
+
+            // Créer les nouvelles relations doctorant-article-chercheur
+            foreach ($validatedData['chercheurs'] as $chercheurId) {
+                DB::table('doctorant_article_chercheur')->insert([
+                    'idArticle' => $article->idArticle,
+                    'idDoc' => $doctorantConnecte->idDoc,
+                    'idCherch' => $chercheurId
+                ]);
+            }
+
+            DB::commit();
+            return redirect()->route('doctorant.listeArticles')
+                ->with('success', 'Article modifié avec succès.');
+
+        } catch (\Exception $e) {
+            DB::rollback();
+            return redirect()->back()
+                ->withInput()
+                ->with('error', 'Une erreur est survenue : ' . $e->getMessage());
+        }
+    }
+
+    public function listeDoctorants()
+    {
+        // Récupérer les doctorants avec leurs relations
+        $doctorants = Doctorant::with(['theme.axeRecherche', 'encadrants', 'articles'])
+            ->orderByDesc('created_at')
+            ->paginate(10);
+
+
+        // Récupérer uniquement les thèmes non attribués (etatAttribution = false)
+        $themes = Theme::where('etatAttribution', false)->get();
+
+
+        // Récupérer les chercheurs pour le formulaire d'ajout
+        $chercheurs = Chercheur::all();
+
+        return view('lab.admin.liste_doctorant', compact('doctorants', 'themes', 'chercheurs'));
+    }
 
     public function create(Request $request)
     {
         // Validation des données
         $validated = $request->validate([
             'nomDoc' => 'required|string|max:255',
-            'prenomDoc' => 'nullable|string|max:255', // Le prénom est facultatif
-            'idTheme' => 'required',
-            'idCherch' => 'required|array', // Vérifie que c'est un tableau
-            'idCherch.*' => 'required', // Vérifie que chaque encadrant existe
-            'dateDebut' => 'nullable|date', // La date de début n'est plus requise, mais doit être une date valide si présente
-            'dateFin' => 'nullable|date', // La date de fin est facultative
+            'prenomDoc' => 'required|string|max:255',
+            'matriculeDoc' => 'required|string|max:50|unique:doctorants,matriculeDoc',
+            'password' => 'required|string|min:6|confirmed',
+            // Champs optionnels
+            'genreDoc' => 'nullable|in:M,F',
+            'emailDoc' => 'nullable|email|unique:doctorants,emailDoc',
+            'telDoc' => 'nullable|string|max:20',
+            'idTheme' => 'nullable|exists:themes,idTheme',
+            'encadrants' => 'nullable|array',
+            'encadrants.*' => 'exists:chercheurs,idCherch'
         ], [
-            'nomDoc.required' => 'Le nom du doctorant est obligatoire.',
-            'nomDoc.max' => 'Le nom du doctorant ne doit pas dépasser 255 caractères.',
-            'prenomDoc.max' => 'Le prénom du doctorant ne doit pas dépasser 255 caractères.',
-            'idTheme.required' => 'Le thème de recherche est obligatoire.',
-            'idCherch.required' => 'Au moins un encadrant est requis.',
-            'idCherch.array' => 'Les encadrants doivent être envoyés sous forme de tableau.',
-            'idCherch.*.required' => 'Chaque encadrant doit être sélectionné.',
-            'dateDebut.date' => 'La date de début doit être une date valide.',
-            'dateFin.date' => 'La date de fin doit être une date valide.',
+            'nomDoc.required' => 'Le nom est obligatoire',
+            'prenomDoc.required' => 'Le prénom est obligatoire',
+            'matriculeDoc.required' => 'Le matricule est obligatoire',
+            'matriculeDoc.unique' => 'Ce matricule existe déjà',
+            'password.required' => 'Le mot de passe est obligatoire',
+            'password.confirmed' => 'Les mots de passe ne correspondent pas',
+            'emailDoc.unique' => 'Cet email existe déjà',
+            'emailDoc.email' => 'Format d\'email invalide'
         ]);
 
-        // Utilisation d'une transaction pour garantir l'intégrité des données
-        try {
-            DB::beginTransaction();
+        DB::beginTransaction();
 
-            // Création du doctorant
+        try {
+            // Créer le doctorant
             $doctorant = Doctorant::create([
                 'nomDoc' => $validated['nomDoc'],
-                'prenomDoc' => $validated['prenomDoc'] ?? null, // Gère le cas où le prénom n'est pas renseigné
-                'idTheme' => $validated['idTheme'],
+                'prenomDoc' => $validated['prenomDoc'],
+                'matriculeDoc' => $validated['matriculeDoc'],
+                'genreDoc' => $validated['genreDoc'] ?? null,
+                'emailDoc' => $validated['emailDoc'] ?? null,
+                'telDoc' => $validated['telDoc'] ?? null,
+                'password' => Hash::make($validated['password']),
+                'idTheme' => $validated['idTheme'] ?? null
             ]);
 
-            // Associer les encadrants avec les dates
-            $encadrantsData = [];
-            foreach ($validated['idCherch'] as $encadrantId) {
-                // Si la date de début n'est pas fournie, elle sera définie sur null
-                $encadrantsData[$encadrantId] = [
-                    'dateDebut' => $validated['dateDebut'] ?: null, // Si pas de date, on l'assigne à null
-                    'dateFin' => $validated['dateFin'] ?: null, // Si pas de date de fin, on l'assigne à null
-                ];
+            // Mettre à jour l'état d'attribution du thème si un thème est sélectionné
+            if (isset($validated['idTheme'])) {
+                $theme = Theme::findOrFail($validated['idTheme']);
+                $theme->update(['etatAttribution' => true]);
             }
 
-            // Associer les encadrants en une seule fois
-            $doctorant->encadrants()->attach($encadrantsData);
+            // Attacher les encadrants si présents
+            if (isset($validated['encadrants']) && !empty($validated['encadrants'])) {
+                foreach ($validated['encadrants'] as $encadrantId) {
+                    $doctorant->encadrants()->attach($encadrantId, [
+                        'dateDebut' => now()
+                    ]);
+                }
+            }
 
-            // Validation de la transaction
             DB::commit();
+            return redirect()->route('admin.listeDoctorants')
+                ->with('success', 'Doctorant créé avec succès.');
 
-            return redirect()->route('admin.listeDoctorant')->with('success', 'Doctorant ajouté avec succès.');
         } catch (\Exception $e) {
-            // Annulation de la transaction en cas d'erreur
             DB::rollBack();
-
-            // Retourner l'erreur complète dans le message
-            return redirect()->back()->withErrors(['error' => 'Une erreur est survenue lors de l’enregistrement. Détails : ' . $e->getMessage()]);
+            return redirect()->back()
+                ->withInput()
+                ->with('error', 'Erreur lors de la création : ' . $e->getMessage());
         }
     }
 
-
-    // rechercher un doctorant
     public function search(Request $request)
     {
-        // Récupérer la requête de recherche
-        $query = $request->input('query');
+        try {
+            $query = $request->input('query');
 
-        // Recherche dans la table 'doctorants'
-        $doctorants = Doctorant::query()
-            ->when($query, function ($queryBuilder) use ($query) {
-                $queryBuilder->where('nomDoc', 'like', '%' . $query . '%')
-                             ->orWhere('prenomDoc', 'like', '%' . $query . '%')
-                             ->orWhereHas('theme', function ($themeQuery) use ($query) {
-                                 $themeQuery->where('descTheme', 'like', '%' . $query . '%');
-                             });
+            // Si la recherche est vide, retourner tous les doctorants
+            if (empty($query)) {
+                return redirect()->route('admin.listeDoctorants');
+            }
+
+            $doctorants = Doctorant::where(function($q) use ($query) {
+                // Recherche sur le nom complet
+                if (str_contains($query, ' ')) {
+                    $parts = explode(' ', $query);
+                    $nom = $parts[0];
+                    $prenom = $parts[1] ?? '';
+
+                    $q->where(function($subQ) use ($nom, $prenom) {
+                        // Recherche exacte sur nom et prénom
+                        $subQ->where(function($innerQ) use ($nom, $prenom) {
+                            $innerQ->where('nomDoc', 'like', '%' . $nom . '%')
+                                   ->where('prenomDoc', 'like', '%' . $prenom . '%');
+                        })
+                        // OU recherche inversée (prénom nom)
+                        ->orWhere(function($innerQ) use ($nom, $prenom) {
+                            $innerQ->where('prenomDoc', 'like', '%' . $nom . '%')
+                                   ->where('nomDoc', 'like', '%' . $prenom . '%');
+                        });
+                    });
+                } else {
+                    // Recherche simple sur un seul terme
+                    $q->where('nomDoc', 'like', '%' . $query . '%')
+                      ->orWhere('prenomDoc', 'like', '%' . $query . '%')
+                      ->orWhere('matriculeDoc', 'like', '%' . $query . '%')
+                      ->orWhere('emailDoc', 'like', '%' . $query . '%')
+                      // Recherche dans les thèmes
+                      ->orWhereHas('theme', function($subQ) use ($query) {
+                          $subQ->where('intituleTheme', 'like', '%' . $query . '%');
+                      })
+                      // Recherche dans les encadrants
+                      ->orWhereHas('encadrants', function($subQ) use ($query) {
+                          $subQ->where(DB::raw("CONCAT(nomCherch, ' ', prenomCherch)"), 'like', '%' . $query . '%')
+                               ->orWhere(DB::raw("CONCAT(prenomCherch, ' ', nomCherch)"), 'like', '%' . $query . '%');
+                      });
+                }
             })
-            ->with('theme') // Charger le thème associé pour éviter les requêtes supplémentaires
-            ->paginate(10); // Pagination des résultats
+            ->with(['theme.axeRecherche', 'encadrants', 'articles'])
+            ->orderByDesc('created_at')
+            ->paginate(10)
+            ->withQueryString();
 
-        $themes = Theme::all();
-        $chercheurs = Chercheur::all();
+            // Récupérer les données nécessaires pour le formulaire
+            $themes = Theme::where('etatAttribution', false)->get();
+            $chercheurs = Chercheur::all();
 
-        // Retourner la vue avec les résultats
-        return view('lab.admin.liste_doctorant', compact('doctorants', 'query', 'themes' , 'chercheurs'));
+            return view('lab.admin.liste_doctorant', compact('doctorants', 'themes', 'chercheurs', 'query'));
+
+        } catch (\Exception $e) {
+            return redirect()->route('admin.listeDoctorants')
+                ->with('error', 'Erreur lors de la recherche : ' . $e->getMessage());
+        }
     }
-
 
     public function edit($id)
     {
         try {
-            // Récupérer le doctorant avec ses relations
-            $doctorant = Doctorant::with(['theme', 'encadrants'])->findOrFail($id);
+            $doctorant = Doctorant::with(['theme', 'encadrants', 'articles'])->findOrFail($id);
 
-            // Récupérer tous les thèmes et chercheurs pour les listes déroulantes
-            $themes = Theme::all();
+            // Récupérer les thèmes disponibles (non attribués ou attribués à ce doctorant)
+            $themes = Theme::where('etatAttribution', false)
+                ->orWhere('idTheme', $doctorant->idTheme)
+                ->orWhereHas('doctorants', function($query) use ($id) {
+                    $query->where('idDoc', $id);
+                })
+                ->get();
+
+            // Récupérer tous les chercheurs
             $chercheurs = Chercheur::all();
 
-            // Retourner la vue avec les données
-            return view('lab.admin.modifier_doctorant', compact('doctorant', 'themes', 'chercheurs'));
+            // Récupérer les IDs des encadrants actuels
+            $encadrantsIds = $doctorant->encadrants->pluck('idCherch')->toArray();
 
+            return view('lab.admin.modifier_doctorant', compact('doctorant', 'themes', 'chercheurs', 'encadrantsIds'));
         } catch (\Exception $e) {
-            // En cas d'erreur, rediriger avec un message d'erreur
-            return redirect()->route('admin.listeDoctorant')
-                            ->with('error', 'Une erreur est survenue lors de la récupération des données du doctorant.');
+            return redirect()->route('admin.listeDoctorants')
+                ->with('error', 'Doctorant non trouvé : ' . $e->getMessage());
         }
     }
 
     public function update(Request $request, $id)
     {
-        // Début de la transaction
-        DB::beginTransaction();
+        // Règles de validation de base
+        $rules = [
+            'nomDoc' => 'required|string|max:255',
+            'prenomDoc' => 'required|string|max:255',
+            'matriculeDoc' => 'required|string|max:50|unique:doctorants,matriculeDoc,' . $id . ',idDoc',
+            'genreDoc' => 'nullable|in:M,F',
+            'emailDoc' => 'nullable|email|unique:doctorants,emailDoc,' . $id . ',idDoc',
+            'telDoc' => 'nullable|string|max:20',
+            'idTheme' => 'nullable|exists:themes,idTheme',
+            'encadrants' => 'nullable|array',
+            'encadrants.*' => 'exists:chercheurs,idCherch'
+        ];
+
+        // Ajouter la validation du mot de passe s'il est fourni
+        if ($request->filled('password')) {
+            $rules['password'] = 'required|string|min:6|confirmed';
+        }
+
+        $validated = $request->validate($rules, [
+            'nomDoc.required' => 'Le nom est obligatoire',
+            'prenomDoc.required' => 'Le prénom est obligatoire',
+            'matriculeDoc.required' => 'Le matricule est obligatoire',
+            'matriculeDoc.unique' => 'Ce matricule est déjà utilisé par un autre doctorant',
+            'emailDoc.unique' => 'Cet email est déjà utilisé par un autre doctorant',
+            'emailDoc.email' => 'Format d\'email invalide',
+            'password.confirmed' => 'Les mots de passe ne correspondent pas'
+        ]);
 
         try {
-            // Validation des données
-            $validated = $request->validate([
-                'nomDoc' => 'required|string|max:255',
-                'prenomDoc' => 'nullable|string|max:255',
-                'idTheme' => 'required|exists:themes,idTheme',
-                'idCherch' => 'required|array',
-                'idCherch.*' => 'exists:chercheurs,idCherch',
-                'dateDebut' => 'nullable|date', // Rend la dateDebut non requise, mais vérifie qu'elle est une date valide si fournie
-                'dateFin' => 'nullable|date|after:dateDebut', // La dateFin reste facultative et doit être après la dateDebut si elle est renseignée
-            ], [
-                'nomDoc.required' => 'Le nom est obligatoire.',
-                'nomDoc.max' => 'Le nom ne doit pas dépasser 255 caractères.',
-                'prenomDoc.max' => 'Le prénom ne doit pas dépasser 255 caractères.',
-                'idTheme.required' => 'Le thème de recherche est obligatoire.',
-                'idTheme.exists' => 'Le thème sélectionné n\'existe pas.',
-                'idCherch.required' => 'Au moins un encadrant est requis.',
-                'idCherch.*.exists' => 'Un des encadrants sélectionnés n\'existe pas.',
-                'dateDebut.date' => 'La date de début doit être une date valide.',
-                'dateFin.date' => 'La date de fin doit être une date valide.',
-                'dateFin.after' => 'La date de fin doit être postérieure à la date de début.',
-            ]);
+            DB::beginTransaction();
 
-            // Récupérer le doctorant
             $doctorant = Doctorant::findOrFail($id);
+            $ancienThemeId = $doctorant->idTheme;
 
-            // Mettre à jour les informations de base du doctorant
-            $doctorant->update([
+            // Préparer les données de mise à jour
+            $dataToUpdate = [
                 'nomDoc' => $validated['nomDoc'],
                 'prenomDoc' => $validated['prenomDoc'],
-                'idTheme' => $validated['idTheme'],
-            ]);
+                'matriculeDoc' => $validated['matriculeDoc'],
+                'genreDoc' => $validated['genreDoc'] ?? null,
+                'emailDoc' => $validated['emailDoc'] ?? null,
+                'telDoc' => $validated['telDoc'] ?? null,
+                'idTheme' => $validated['idTheme'] ?? null
+            ];
 
-            // Détacher tous les encadrants existants
-            $doctorant->encadrants()->detach();
-
-            // Attacher les nouveaux encadrants avec les dates
-            foreach ($validated['idCherch'] as $chercheurId) {
-                $doctorant->encadrants()->attach($chercheurId, [
-                    'dateDebut' => $validated['dateDebut'] ?? null, // Assure-toi que dateDebut est null si non fourni
-                    'dateFin' => $validated['dateFin'] ?? null,    // La dateFin est aussi nullable
-                ]);
+            // Mettre à jour le mot de passe si fourni
+            if ($request->filled('password')) {
+                $dataToUpdate['password'] = Hash::make($validated['password']);
             }
 
-            // Commit de la transaction
+            // Mise à jour des informations
+            $doctorant->update($dataToUpdate);
+
+            // Gestion du thème
+            if ($ancienThemeId !== ($validated['idTheme'] ?? null)) {
+                // Libérer l'ancien thème si nécessaire
+                if ($ancienThemeId) {
+                    $ancienTheme = Theme::find($ancienThemeId);
+                    if ($ancienTheme && !$ancienTheme->doctorants()->where('idDoc', '!=', $id)->exists()) {
+                        $ancienTheme->update(['etatAttribution' => false]);
+                    }
+                }
+
+                // Marquer le nouveau thème comme attribué
+                if (isset($validated['idTheme'])) {
+                    Theme::findOrFail($validated['idTheme'])->update(['etatAttribution' => true]);
+                }
+            }
+
+            // Gestion des encadrants
+            if (isset($validated['encadrants'])) {
+                $doctorant->encadrants()->sync($validated['encadrants']);
+            }
+
+            DB::commit();
+            return redirect()->route('admin.listeDoctorants')
+                ->with('success', 'Doctorant modifié avec succès.');
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return redirect()->back()
+                ->withInput()
+                ->with('error', 'Erreur lors de la modification : ' . $e->getMessage());
+        }
+    }
+
+    public function delete($idArticle)
+    {
+        try {
+            // Récupérer l'article
+            $article = Article::findOrFail($idArticle);
+
+            // Vérifier si le doctorant connecté est autorisé à supprimer cet article
+            $doctorantConnecte = Auth::user();
+            $isAuthorized = DB::table('doctorant_article_chercheur')
+                ->where('idArticle', $idArticle)
+                ->where('idDoc', $doctorantConnecte->idDoc)
+                ->exists();
+
+            if (!$isAuthorized) {
+                return redirect()->route('doctorant.listeArticles')
+                    ->with('error', 'Vous n\'êtes pas autorisé à supprimer cet article.');
+            }
+
+            // Démarrer une transaction
+            DB::beginTransaction();
+
+            // Supprimer les relations dans doctorant_article_chercheur
+            DB::table('doctorant_article_chercheur')
+                ->where('idArticle', $idArticle)
+                ->where('idDoc', $doctorantConnecte->idDoc)
+                ->delete();
+
+            // Vérifier si l'article est encore référencé par d'autres doctorants ou chercheurs
+            $hasOtherDoctorants = DB::table('doctorant_article_chercheur')
+                ->where('idArticle', $idArticle)
+                ->exists();
+
+            $hasOtherChercheurs = DB::table('chercheur_article')
+                ->where('idArticle', $idArticle)
+                ->exists();
+
+            // Si l'article n'est plus référencé par personne, le supprimer
+            if (!$hasOtherDoctorants && !$hasOtherChercheurs) {
+                // Supprimer l'article
+                $article->delete();
+            }
+
+            // Valider la transaction
             DB::commit();
 
-            // Rediriger avec un message de succès
-            return redirect()->route('admin.listeDoctorant')
-                ->with('success', 'Doctorant modifié avec succès.');
+            return redirect()->route('doctorant.listeArticles')
+                ->with('success', 'Article supprimé avec succès.');
 
         } catch (\Exception $e) {
             // Annuler la transaction en cas d'erreur
             DB::rollBack();
 
-            // Rediriger avec un message d'erreur
-            return redirect()->back()
-                ->withInput()
-                ->with('error', 'Une erreur est survenue lors de la modification du doctorant : ' . $e->getMessage());
+            return redirect()->route('doctorant.listeArticles')
+                ->with('error', 'Une erreur est survenue lors de la suppression : ' . $e->getMessage());
         }
     }
 
-
-    public function delete($id)
+    public function rechercheArticle(Request $request)
     {
+        // Vérifiez si l'utilisateur est authentifié
+        if (!Auth::check()) {
+            return redirect()->route('login')->with('error', 'Vous devez être connecté pour effectuer une recherche.');
+        }
+
+        $doctorantConnecte = Auth::user();
+        $query = $request->input('query');
+        $annee = $request->input('annee');
+
+        // Base de la requête : récupérer tous les articles du doctorant connecté
+        $articlesQuery = Article::with(['publication', 'typeArticle', 'chercheurs', 'doctorants'])
+            ->whereHas('doctorants', function($q) use ($doctorantConnecte) {
+                $q->where('doctorants.idDoc', $doctorantConnecte->idDoc);
+            });
+
+        // Appliquer la recherche si un terme est entré
+        if ($query) {
+            $articlesQuery->where(function ($queryBuilder) use ($query) {
+                // Recherche dans les colonnes de l'article
+                $queryBuilder->where('titreArticle', 'like', '%' . $query . '%')
+                    ->orWhere('resumeArticle', 'like', '%' . $query . '%')
+                    ->orWhere('doi', 'like', '%' . $query . '%');
+
+                // Recherche dans la publication (titre et éditeur)
+                $queryBuilder->orWhereHas('publication', function ($pubQuery) use ($query) {
+                    $pubQuery->where('titrePub', 'like', '%' . $query . '%')
+                        ->orWhere('editeurPub', 'like', '%' . $query . '%');
+                });
+
+                // Recherche par chercheur (nom + prénom)
+                $queryBuilder->orWhereHas('chercheurs', function ($chercheurQuery) use ($query) {
+                    $chercheurQuery->whereRaw("LOWER(CONCAT(TRIM(prenomCherch), ' ', TRIM(nomCherch))) LIKE LOWER(?)", ['%' . trim($query) . '%'])
+                        ->orWhereRaw("LOWER(CONCAT(TRIM(nomCherch), ' ', TRIM(prenomCherch))) LIKE LOWER(?)", ['%' . trim($query) . '%'])
+                        ->orWhere('prenomCherch', 'like', '%' . $query . '%')
+                        ->orWhere('nomCherch', 'like', '%' . $query . '%');
+                });
+
+                // Recherche par doctorant (nom + prénom)
+                $queryBuilder->orWhereHas('doctorants', function ($doctorantQuery) use ($query) {
+                    $doctorantQuery->whereRaw("LOWER(CONCAT(TRIM(prenomDoc), ' ', TRIM(nomDoc))) LIKE LOWER(?)", ['%' . trim($query) . '%'])
+                        ->orWhereRaw("LOWER(CONCAT(TRIM(nomDoc), ' ', TRIM(prenomDoc))) LIKE LOWER(?)", ['%' . trim($query) . '%'])
+                        ->orWhere('prenomDoc', 'like', '%' . $query . '%')
+                        ->orWhere('nomDoc', 'like', '%' . $query . '%');
+                });
+            });
+        }
+
+        // Filtre par année
+        if ($annee && $annee != 'Tous') {
+            $articlesQuery->whereYear('datePubArt', $annee);
+        }
+
+        // Récupérer les articles filtrés et paginés
+        $articles = $articlesQuery->orderBy('created_at', 'desc')->paginate(12);
+
+        // Conserver les paramètres de filtre dans la pagination
+        $articles->appends([
+            'query' => $query,
+            'annee' => $annee
+        ]);
+
+        // Récupérer les années distinctes pour le filtre
+        $annees = DB::table('articles')
+            ->selectRaw('YEAR(datePubArt) as year')
+            ->distinct()
+            ->whereNotNull('datePubArt')
+            ->orderBy('year', 'desc')
+            ->pluck('year');
+
+        // Récupérer toutes les données nécessaires pour les filtres et l'affichage
+        $publications = Publication::orderBy('titrePub', 'asc')->get();
+        $chercheurs = Chercheur::orderBy('nomCherch', 'asc')
+                    ->orderBy('prenomCherch', 'asc')
+                    ->get();
+        $doctorants = Doctorant::orderBy('nomDoc', 'asc')
+                    ->orderBy('prenomDoc', 'asc')
+                    ->get();
+        $typeArticles = TypeArticle::orderBy('nomTypeArticle', 'asc')->get();
+
+        // Variables pour les filtres actifs
+        $typeArticleId = null;
+
+        // Retourner la vue avec toutes les données nécessaires
+        return view('lab.doctorant.liste_article', compact(
+            'articles',
+            'annees',
+            'publications',
+            'typeArticles',
+            'chercheurs',
+            'doctorants',
+            'query',
+            'annee',
+            'typeArticleId'
+        ));
+    }
+
+    public function profil()
+    {
+        $doctorant = Auth::guard('doctorant')->user();
+        return view('lab.doctorant.profil', compact('doctorant'));
+    }
+
+    public function modifierProfil(Request $request)
+    {
+        // Validation des données
+        $validated = $request->validate([
+            'nomDoc' => 'required|string|max:255',
+            'prenomDoc' => 'required|string|max:255',
+            'genreDoc' => 'nullable|in:M,F',
+            'matriculeDoc' => 'required|string|max:20',
+            'emailDoc' => 'required|email|max:100|unique:doctorants,emailDoc,' . auth()->user()->idDoc . ',idDoc',
+            'telDoc' => 'nullable|string|max:15',
+            'current_password' => 'nullable|required_with:new_password',
+            'new_password' => 'nullable|min:8|confirmed',
+            'new_password_confirmation' => 'nullable|required_with:new_password',
+        ]);
+
         DB::beginTransaction();
 
         try {
-            // Récupérer le doctorant à supprimer
-            $doctorant = Doctorant::findOrFail($id);
+            $doctorant = auth()->guard('doctorant')->user();
 
-            // Dissocier les enregistrements dans les tables pivot
-            $doctorant->encadrants()->detach();  // Supprimer les relations dans doctorant_chercheur
-            $doctorant->articles()->detach();    // Supprimer les relations dans doctorant_article_chercheur
+            // Mise à jour des informations de base
+            $updateData = collect($validated)->except(['current_password', 'new_password', 'new_password_confirmation'])->toArray();
 
-            // Supprimer le doctorant
-            $doctorant->delete();
+            // Gestion du mot de passe
+            if ($request->filled('current_password')) {
+                if (!Hash::check($request->current_password, $doctorant->password)) {
+                    return redirect()->route('doctorant.profil')
+                        ->withInput()
+                        ->with('error', 'Le mot de passe actuel est incorrect.');
+                }
 
-            // Commit de la transaction
+                if ($request->filled('new_password')) {
+                    $updateData['password'] = Hash::make($request->new_password);
+                }
+            }
+
+            // Mise à jour des données
+            $doctorant->update($updateData);
+
             DB::commit();
+            return redirect()->route('doctorant.profil')
+                ->with('success', 'Profil mis à jour avec succès.');
 
-            // Rediriger avec un message de succès
-            return redirect()->route('admin.listeDoctorant')
-                             ->with('success', 'Doctorant supprimé avec succès.');
         } catch (\Exception $e) {
             DB::rollBack();
-
-            // Rediriger avec un message d'erreur
-            return redirect()->route('admin.listeDoctorant')
-                             ->with('error', 'Une erreur est survenue lors de la suppression du doctorant. Détails: ' . $e->getMessage());
+            return redirect()->route('doctorant.profil')
+                ->withInput()
+                ->with('error', 'Erreur lors de la mise à jour du profil : ' . $e->getMessage());
         }
     }
 }
 
-
-
-// // Insérer dans la table pivot avec des champs explicites
-// foreach ($encadrantsData as $data) {
-//     $doctorant->encadrants()->attach($data['idCherch'], [
-//         'dateDebut' => $data['dateDebut'],
-//         'dateFin' => $data['dateFin'],
-//     ]);
-// }

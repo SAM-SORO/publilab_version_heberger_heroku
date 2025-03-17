@@ -49,35 +49,84 @@
         </form>
     </div>
 
-    <div class="container d-flex mt-5 align-items-center">
-        <ul class="list-unstyled">
-            <li class="text-secondary col-2 ml-5 mt-4">Année</li>
-        </ul>
+    <div class="container mt-5">
+        <div class="row align-items-center">
+            <!-- Filtres -->
+            <div class="col-md-9">
+                <form action="{{ route('chercheur.listeArticles') }}" method="GET" class="row">
 
-        <!-- Utilisation de d-flex et justify-content-between pour espacer les éléments -->
-        <div class="d-flex justify-content-between w-100">
-            <div class="col-9">
-                <form action="{{ route('chercheur.filtreArticle') }}" method="GET">
-                    @csrf
-                    <input type="hidden" name="query" value="{{ request('query') }}">
-                    <select title="filtre par année" class="custom-select col-4 col-lg-2 col-sm-6 col-md-3" name="annee" onchange="this.form.submit()">
-                        <option value="Tous" {{ request('annee') === 'Tous' ? 'selected' : '' }}>Tous</option>
-                        @foreach ($annees as $annee)
-                            <option value="{{ $annee }}" {{ request('annee') == $annee ? 'selected' : '' }}>{{ $annee }}</option>
-                        @endforeach
-                    </select>
+                    <!-- Filtre par année -->
+                    <div class="col-md-4 mb-3">
+                        <label for="annee" class="text-secondary small mb-1">Année</label>
+                        <select class="custom-select" id="annee" name="annee" onchange="this.form.submit()">
+                            <option value="Tous">Toutes les années</option>
+                            @foreach ($annees as $anneeOption)
+                                <option value="{{ $anneeOption }}" {{ $annee == $anneeOption ? 'selected' : '' }}>
+                                    {{ $anneeOption }}
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    <!-- Filtre par type d'article -->
+                    <div class="col-md-4 mb-3">
+                        <label for="typeArticle" class="text-secondary small mb-1">Type d'article</label>
+                        <select class="custom-select" id="typeArticle" name="typeArticle" onchange="this.form.submit()">
+                            <option value="Tous">Tous les types</option>
+                            @foreach ($typeArticles as $type)
+                                <option value="{{ $type->idTypeArticle }}" {{ $typeArticleId == $type->idTypeArticle ? 'selected' : '' }}>
+                                    {{ $type->nomTypeArticle }}
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
                 </form>
             </div>
 
-            <!-- Bouton pour ouvrir le modal pour ajouter un article -->
-            <div>
+            <!-- Bouton d'ajout -->
+            <div class="col-md-3 text-right mb-3">
                 <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#addArticleModal">
-                    Ajouter un Article
+                    <i class="fas fa-plus-circle"></i> Nouvel article
                 </button>
             </div>
         </div>
-    </div>
 
+        <!-- Affichage du nombre d'articles - Version améliorée -->
+        <div class="card shadow-sm mb-1">
+            <div class="card-body py-3">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <span class="text-primary font-weight-bold">
+                            <i class="fas fa-file-alt mr-2"></i>
+                            {{ $articles->total() }} article(s)
+                        </span>
+                        <span class="text-muted ml-2">
+                            @if(isset($query))
+                                trouvé(s) pour "<strong>{{ $query }}</strong>"
+                            @else
+                                @if($annee && $annee != 'Tous')
+                                    <span class="badge badge-light border mr-1">Année: {{ $annee }}</span>
+                                @endif
+                                @if($typeArticleId && $typeArticleId != 'Tous')
+                                    <span class="badge badge-light border mr-1">Type: {{ $typeArticles->where('idTypeArticle', $typeArticleId)->first()->nomTypeArticle }}</span>
+                                @endif
+                                @if($typeAuteur && $typeAuteur != 'Tous')
+                                    <span class="badge badge-light border">
+                                        {{ $typeAuteur == 'chercheur' ? 'Chercheurs' : 'de doctorants' }}
+                                    </span>
+                                @endif
+                            @endif
+                        </span>
+                    </div>
+                    <div>
+                        <a href="{{ route('chercheur.listeArticles') }}" class="btn btn-sm btn-outline-secondary">
+                            <i class="fas fa-sync-alt"></i> Réinitialiser les filtres
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 
 
     <div class="p-5">
@@ -93,228 +142,314 @@
             <div class="row row-cols-1 row-cols-md-2 g-4">
                 @foreach ($articles as $article)
                     <div class="col mb-4">
-                        <div class="d-flex flex-column rounded shadow bg-white p-3 h-100">
-                            <div class="d-flex">
-                                <div class="ml-3">
-                                    <!-- Titre de l'article avec les auteurs -->
+                        <div class="card shadow-sm h-100">
+                            <div class="card-header bg-dark text-white">
+                                <h5 class="card-title mb-0">{{ Str::limit($article->titreArticle, 60) }}</h5>
+                            </div>
+                            <div class="card-body">
+                                <!-- Auteurs -->
+                                <div class="mb-3">
                                     <p class="mb-1 font-weight-bold">
                                         @foreach ($article->chercheurs as $chercheur)
-                                            {{ $chercheur->prenomCherch }} {{ strtoupper($chercheur->nomCherch) }},
+                                            {{ $chercheur->prenomCherch }} {{ strtoupper($chercheur->nomCherch) }}
+                                            @if (!$loop->last), @endif
                                         @endforeach
-                                        @foreach ($article->doctorants as $doctorant)
-                                            {{ $doctorant->prenomDoc }} {{ strtoupper($doctorant->nomDoc) }}
-                                            @if ($doctorant->encadrants->isNotEmpty())
-                                                (encadré par
-                                                @foreach ($doctorant->encadrants as $encadrant)
-                                                    {{ $encadrant->prenomCherch }} {{ strtoupper($encadrant->nomCherch) }}
-                                                @endforeach)
-                                            @endif
-                                        @endforeach
-                                        <span class="text-danger">{{ $article->titreArticle }}</span>
                                     </p>
-
-                                    <!-- Informations de publication et DOI -->
-                                    @foreach ($article->revues as $revue)
-                                        <p>
-                                            <em>{{ $revue->nomRevue }}</em>
-                                            @if (!empty($revue->pivot->datePubArt))
-                                                , {{ \Carbon\Carbon::parse($revue->pivot->datePubArt)->format('d M Y') }}
-                                            @endif
-                                            @if (!empty($revue->pivot->volume))
-                                                ; Vol.{{ $revue->pivot->volume }}
-                                            @endif
-                                            @if (!empty($revue->pivot->pageDebut) && !empty($revue->pivot->pageFin))
-                                                pp.{{ $revue->pivot->pageDebut }}-{{ $revue->pivot->pageFin }}
-                                            @endif
-                                            @if (!empty($revue->pivot->numero))
-                                                , N°: {{ $revue->pivot->numero }}
-                                            @endif
-                                            @if (!empty($article->doi))
-                                                , DOI: {{ $article->doi }}
-                                            @endif
-                                        </p>
-                                    @endforeach
-
-                                    <!-- Indexation de la revue -->
-                                    @foreach ($article->revues as $revue)
-                                        @if ($revue->bdIndexations->isNotEmpty())
-                                            @foreach ($revue->bdIndexations as $bdIndexation)
-                                                <p class="text-muted">Indexé {{ $bdIndexation->nomBDInd }}</p>
+                                    <p>
+                                        @if($article->doctorants->isNotEmpty())
+                                            @foreach ($article->doctorants as $doctorant)
+                                                {{ $doctorant->prenomDoc }} {{ strtoupper($doctorant->nomDoc) }}
+                                                @if (!$loop->last), @endif
                                             @endforeach
                                         @endif
-                                    @endforeach
+                                    </p>
 
-                                    <!-- Résumé de l'article -->
-                                    @if (!empty($article->resumeArticle))
-                                        <small><p>{{ $article->resumeArticle }}</p></small>
+                                    <!-- Informations de publication -->
+                                    @if($article->publication)
+                                        <p>
+                                            <em>{{ $article->publication->titrePub }}</em>
+                                            @if (!empty($article->datePubArt))
+                                                , {{ \Carbon\Carbon::parse($article->datePubArt)->format('d M Y') }}
+                                            @endif
+                                            @if (!empty($article->volume))
+                                                ; Vol.{{ $article->volume }}
+                                            @endif
+                                            @if (!empty($article->pageDebut) && !empty($article->pageFin))
+                                                pp.{{ $article->pageDebut }}-{{ $article->pageFin }}
+                                            @endif
+                                            @if (!empty($article->numero))
+                                                , N°: {{ $article->numero }}
+                                            @endif
+                                        </p>
                                     @endif
-                                </div>
 
+                                    <!-- DOI et Lien -->
+                                    @if (!empty($article->doi))
+                                        <p>DOI: {{ $article->doi }}</p>
+                                    @endif
+                                    @if (!empty($article->lienArticle))
+                                        <p><a href="{{ $article->lienArticle }}" target="_blank" class="btn btn-sm btn-outline-primary">
+                                            <i class="fas fa-external-link-alt"></i> Voir l'article
+                                        </a></p>
+                                    @endif
+
+                                    <!-- Type d'article -->
+                                    @if($article->typeArticle)
+                                        <p class="text-muted">Type: {{ $article->typeArticle->nomTypeArticle }}</p>
+                                    @endif
+
+                                </div>
                             </div>
 
-                            <div class="d-flex justify-content-end mt-auto">
-                                <form action="{{ route('chercheur.modifierArticle', $article->idArticle) }}" method="GET">
-                                    @csrf
-                                    <button class="btn btn-primary mr-2" type="submit">Modifier</button>
-                                </form>
+                            <!-- Boutons d'action -->
+                            <div class="card-footer bg-light text-white">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <!-- Bouton Voir l'article (à gauche) -->
+                                               <!-- Boutons d'action (à droite) -->
+                                        <button type="button" class="btn btn-sm btn-outline-secondary mr-2"
+                                               data-toggle="modal"
+                                               data-target="#detailsModal{{ $article->idArticle }}">
+                                           <i class="fas fa-info-circle"></i> Détails
+                                       </button>
+                                    </div>
 
-                                <form id="deleteArticleChercheurForm" action="{{ route('chercheur.supprimerArticle', $article->idArticle) }}" method="POST" style="display: inline;">
-                                    @csrf
-                                    @method('POST') <!-- Utilisation de la méthode POST -->
-                                    <button type="button" class="btn btn-danger" onclick="confirmDelete({{ $article->idArticle }})">
-                                        Supprimer
-                                    </button>
-                                </form>
+                                    <div class="d-flex gap-2">
 
+                                        <a href="{{ route('chercheur.modifierArticle', $article->idArticle) }}"
+                                           class="btn btn-outline-primary btn-sm mr-2">
+                                            <i class="fas fa-edit"></i> Modifier
+                                        </a>
+
+                                        <form id="deleteArticleChercheurForm-{{ $article->idArticle }}" action="{{ route('chercheur.supprimerArticle', $article->idArticle) }}" method="POST" class="d-inline">
+                                            @csrf
+                                            <button type="button" class="btn btn-outline-danger btn-sm"
+                                                    onclick="confirmDelete({{ $article->idArticle }})">
+                                                <i class="fas fa-trash"></i> Supprimer
+                                            </button>
+                                        </form>
+                                    </div>
+                                </div>
                             </div>
                         </div>
+
+                        <div class="modal fade" id="detailsModal{{ $article->idArticle }}" tabindex="-1" role="dialog" aria-hidden="true">
+                            <div class="modal-dialog modal-lg" role="document">
+                                <div class="modal-content">
+                                    <div class="modal-header bg-white">
+                                        <h5 class="modal-title">Détails de l'article</h5>
+                                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                            <span aria-hidden="true">&times;</span>
+                                        </button>
+                                    </div>
+                                    <div class="modal-body">
+                                        <!-- Titre -->
+                                        <h6 class="font-weight-bold">Titre</h6>
+                                        <p>{{ $article->titreArticle }}</p>
+
+                                        <!-- Auteurs -->
+                                        <h6 class="font-weight-bold mt-3">Auteurs</h6>
+                                        <p>{{ $article->getFormattedAuthors() }}</p>
+
+                                        <!-- Publication -->
+                                        @if($article->publication)
+                                        <h6 class="font-weight-bold mt-3">Publication</h6>
+                                        <p>{{ $article->publication->titrePub }}</p>
+                                        @endif
+
+                                        <!-- Date de publication -->
+                                        @if($article->datePubArt)
+                                        <h6 class="font-weight-bold mt-3">Date de publication</h6>
+                                        <p>{{ \Carbon\Carbon::parse($article->datePubArt)->format('d/m/Y') }}</p>
+                                        @endif
+
+                                        <!-- Résumé -->
+                                        @if($article->resumeArticle)
+                                        <h6 class="font-weight-bold mt-3">Résumé</h6>
+                                        <p>{{ $article->resumeArticle }}</p>
+                                        @endif
+
+                                        <!-- DOI -->
+                                        @if($article->doi)
+                                        <h6 class="font-weight-bold mt-3">DOI</h6>
+                                        <p>{{ $article->doi }}</p>
+                                        @endif
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Fermer</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
                     </div>
                 @endforeach
             </div>
 
+            <!-- Pagination -->
             <div class="d-flex justify-content-center mt-4">
                 {{ $articles->links('vendor.pagination.bootstrap-4') }}
             </div>
-
         @endif
     </div>
 
 
-<!-- Modal pour enregistrer un article -->
-<div class="modal fade" id="addArticleModal" tabindex="-1" role="dialog" aria-labelledby="addArticleModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg" role="document">
+<!-- Modal d'ajout d'article -->
+<div class="modal fade" id="addArticleModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-lg">
         <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="addArticleModalLabel">Enregistrer un Article publié</h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
+            <div class="modal-header bg-white">
+                <h5 class="modal-title">Enregistrer un Article</h5>
+                <button type="button" class="close" data-dismiss="modal">
+                    <span>&times;</span>
                 </button>
             </div>
             <div class="modal-body">
-                <form action="{{ route('chercheur.enregistrerArticle') }}" method="POST">
+                <form id="articleForm" action="{{ route('chercheur.enregistrerArticle') }}" method="POST">
                     @csrf
 
-                    <!-- Titre de l'article -->
-                    <div class="form-group">
-                        <label for="titreArticle">Titre de l'article <span class="text-danger">*</span></label>
-                        <input type="text" class="form-control @error('titreArticle') is-invalid @enderror"
-                               id="titreArticle" name="titreArticle"
-                               value="{{ old('titreArticle') }}" required>
-                        @error('titreArticle')
-                            <span class="invalid-feedback">{{ $message }}</span>
-                        @enderror
+                    <!-- Informations principales -->
+                    <div class="card mb-3">
+                        <div class="card-header bg-dark text-white">
+                            <h6 class="mb-0">Informations principales</h6>
+                        </div>
+                        <div class="card-body">
+                            <!-- Titre -->
+                            <div class="form-group">
+                                <label for="titreArticle">Titre <span class="text-danger">*</span></label>
+                                <input type="text" name="titreArticle" class="form-control @error('titreArticle') is-invalid @enderror"
+                                       value="{{ old('titreArticle') }}" required>
+                                @error('titreArticle')
+                                    <span class="invalid-feedback">{{ $message }}</span>
+                                @enderror
+                            </div>
+
+                            <!-- Type d'article -->
+                            <div class="form-group">
+                                <label for="idTypeArticle">Type d'article</label>
+                                <select name="type_article" id="idTypeArticle" class="form-control" multiple>
+                                    @foreach($typeArticles as $type)
+                                        <option value="{{ $type->idTypeArticle }}">{{ $type->nomTypeArticle }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+
+                            <!-- Co-auteurs chercheurs -->
+                            <div class="form-group">
+                                <label for="chercheurs">Co-auteurs chercheurs</label>
+                                <select name="chercheurs[]" id="chercheurs" class="form-control" multiple>
+                                    @foreach($chercheurs as $chercheur)
+                                        @if($chercheur->idCherch != Auth::user()->idCherch)
+                                            <option value="{{ $chercheur->idCherch }}">
+                                                {{ $chercheur->prenomCherch }} {{ $chercheur->nomCherch }}
+                                            </option>
+                                        @endif
+                                    @endforeach
+                                </select>
+                            </div>
+
+                            <!-- Co-auteurs doctorants -->
+                            <div class="form-group">
+                                <label for="doctorants">doctorants</label>
+                                <select name="doctorants[]" id="doctorants" class="form-control" multiple>
+                                    @foreach($doctorants as $doctorant)
+                                        <option value="{{ $doctorant->idDoc }}">
+                                            {{ $doctorant->prenomDoc }} {{ $doctorant->nomDoc }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                            </div>
+
+                            <!-- Résumé -->
+                            <div class="form-group">
+                                <label for="resumeArticle">Résumé</label>
+                                <textarea name="description" class="form-control" rows="3"></textarea>
+                            </div>
+                        </div>
                     </div>
 
-                    <!-- Résumé -->
-                    <div class="form-group">
-                        <label for="resumeArticle">Résumé</label>
-                        <textarea class="form-control @error('resumeArticle') is-invalid @enderror"
-                                  id="resumeArticle" name="resumeArticle" rows="3"
-                                  >{{ old('resumeArticle') }}</textarea>
-                        @error('resumeArticle')
-                            <span class="invalid-feedback">{{ $message }}</span>
-                        @enderror
+                    <!-- Publication -->
+                    <div class="card mb-3">
+                        <div class="card-header bg-dark text-white">
+                            <h6 class="mb-0">Informations de publication</h6>
+                        </div>
+                        <div class="card-body">
+                            <!-- Publication -->
+                            <div class="form-group">
+                                <label for="idPub">Publication </label>
+                                <select name="idPub" id="idPub" class="form-control" multiple>
+
+                                    @foreach($publications as $publication)
+                                        <option value="{{ $publication->idPub }}">{{ $publication->titrePub }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+
+                            <!-- Informations spécifiques -->
+
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label>Date de publication </label>
+                                        <input type="date" name="DatePublication" class="form-control">
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label>Volume</label>
+                                        <input type="number" name="Volume" class="form-control">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <div class="form-group">
+                                        <label>Numéro</label>
+                                        <input type="number" name="Numero" class="form-control">
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="form-group">
+                                        <label>Page début </label>
+                                        <input type="number" name="PageDebut" class="form-control">
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="form-group">
+                                        <label>Page fin</label>
+                                        <input type="number" name="PageFin" class="form-control">
+                                    </div>
+                                </div>
+                            </div>
+
+                        </div>
                     </div>
 
-                    <!-- DOI -->
-                    <div class="form-group">
-                        <label for="doi">DOI</label>
-                        <input type="text" class="form-control @error('doi') is-invalid @enderror"
-                               id="doi" name="doi" value="{{ old('doi') }}">
-                        @error('doi')
-                            <span class="invalid-feedback">{{ $message }}</span>
-                        @enderror
+                    <!-- Informations complémentaires -->
+                    <div class="card mb-3">
+                        <div class="card-header bg-dark text-white">
+                            <h6 class="mb-0">Informations complémentaires</h6>
+                        </div>
+                        <div class="card-body">
+                            <!-- DOI -->
+                            <div class="form-group">
+                                <label>DOI</label>
+                                <input type="text" name="doi" class="form-control">
+                            </div>
+
+                            <!-- Lien -->
+                            <div class="form-group">
+                                <label>Lien de l'article</label>
+                                <input type="url" name="lien" class="form-control">
+                            </div>
+                        </div>
                     </div>
 
-                    <!-- Chercheurs contributeurs -->
-                    <div class="form-group">
-                        <label for="chercheurs">Chercheurs</label>
-                        <select class="form-control @error('chercheurs') is-invalid @enderror"
-                                id="chercheurs" name="chercheurs[]" multiple>
-                            @foreach ($chercheurs as $chercheur)
-                                <option value="{{ $chercheur->idCherch }}"
-                                    {{ in_array($chercheur->idCherch, old('chercheurs', [])) ? 'selected' : '' }}>
-                                    {{ $chercheur->prenomCherch }} {{ $chercheur->nomCherch }}
-                                </option>
-                            @endforeach
-                        </select>
-                        @error('chercheurs')
-                            <span class="invalid-feedback">{{ $message }}</span>
-                        @enderror
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Annuler</button>
+                        <button type="submit" class="btn btn-primary">Enregistrer</button>
                     </div>
-
-                    <!-- Revue -->
-                    <div class="form-group">
-                        <label for="revue">Revue</label>
-                        <select class="form-control @error('revue') is-invalid @enderror" id="revue" name="revue" multiple>
-                            @foreach ($revues as $revue)
-                                <option value="{{ $revue->idRevue }}" {{ old('revue') == $revue->idRevue ? 'selected' : '' }}>
-                                    {{ $revue->nomRevue }}
-                                </option>
-                            @endforeach
-                        </select>
-                        @error('revue')
-                            <span class="invalid-feedback">{{ $message }}</span>
-                        @enderror
-                    </div>
-
-                    <!-- Date de publication -->
-                    <div class="form-group">
-                        <label for="datePubArt">Date de publication</label>
-                        <input type="date" class="form-control @error('datePubArt') is-invalid @enderror"
-                               id="datePubArt" name="datePubArt"
-                               value="{{ old('datePubArt') }}">
-                        @error('datePubArt')
-                            <span class="invalid-feedback">{{ $message }}</span>
-                        @enderror
-                    </div>
-
-                    <!-- Volume -->
-                    <div class="form-group">
-                        <label for="volume">Volume</label>
-                        <input type="number" class="form-control @error('volume') is-invalid @enderror"
-                               id="volume" name="volume"
-                               value="{{ old('volume') }}">
-                        @error('volume')
-                            <span class="invalid-feedback">{{ $message }}</span>
-                        @enderror
-                    </div>
-
-                    <!-- Numéro -->
-                    <div class="form-group">
-                        <label for="numero">Numéro</label>
-                        <input type="text" class="form-control @error('numero') is-invalid @enderror"
-                               id="numero" name="numero"
-                               value="{{ old('numero') }}">
-                        @error('numero')
-                            <span class="invalid-feedback">{{ $message }}</span>
-                        @enderror
-                    </div>
-
-                    <!-- Page de début -->
-                    <div class="form-group">
-                        <label for="pageDebut">Page de début</label>
-                        <input type="number" class="form-control @error('pageDebut') is-invalid @enderror"
-                               id="pageDebut" name="pageDebut"
-                               value="{{ old('pageDebut') }}">
-                        @error('pageDebut')
-                            <span class="invalid-feedback">{{ $message }}</span>
-                        @enderror
-                    </div>
-
-                    <!-- Page de fin -->
-                    <div class="form-group">
-                        <label for="pageFin">Page de fin</label>
-                        <input type="number" class="form-control @error('pageFin') is-invalid @enderror"
-                               id="pageFin" name="pageFin"
-                               value="{{ old('pageFin') }}">
-                        @error('pageFin')
-                            <span class="invalid-feedback">{{ $message }}</span>
-                        @enderror
-                    </div>
-
-                    <!-- Bouton d'envoi -->
-                    <button type="submit" class="btn btn-primary">Enregistrer</button>
                 </form>
             </div>
         </div>
@@ -329,20 +464,58 @@
     <script>
 
         $(document).ready(function() {
-            // Initialisation existante pour revue
-            $('#revue').select2({
-                placeholder: 'Sélectionnez une revue',
-                maximumSelectionLength: 1, // Limite à une seule option
-                allowClear: true,
-                width: '100%'
+            // Initialisation de Select2 pour tous les sélecteurs
+            $('#chercheurs').select2({
+                width: '100%',
+                placeholder: 'Sélectionner...',
+                allowClear: true
             });
 
-            // Nouvelle initialisation pour chercheurs
-            $('#chercheurs').select2({
-                placeholder: 'Sélectionnez les chercheurs contributeurs',
-                allowClear: true,
-                width: '100%'
+            $('#doctorants').select2({
+                width: '100%',
+                placeholder: 'Sélectionner...',
+                allowClear: true
             });
+
+            $('#idTypeArticle').select2({
+                width: '100%',
+                placeholder: 'Sélectionner...',
+                allowClear: true,
+                maximumSelectionLength: 1,
+                language: {
+                    noResults: function() {
+                        return "Aucune base trouvée";
+                    },
+                    searching: function() {
+                        return "Recherche...";
+                    },
+                    maximumSelected: function(args) {
+                        return "Vous ne pouvez sélectionner qu'un seul élément";
+                    }
+                },
+
+            });
+
+            $('#idPub').select2({
+                width: '100%',
+                placeholder: 'Sélectionner...',
+                allowClear: true,
+                maximumSelectionLength: 1,
+                language: {
+                    noResults: function() {
+                        return "Aucune base trouvée";
+                    },
+                    searching: function() {
+                        return "Recherche...";
+                    },
+                    maximumSelected: function(args) {
+                        return "Vous ne pouvez sélectionner qu'un seul élément";
+                    }
+                },
+
+            });
+
+            $('.select2-selection').css('min-height', '40px'); // Applique la hauteur après initialisation
         });
 
 
@@ -358,20 +531,10 @@
                 cancelButtonText: "Annuler"
             }).then((result) => {
                 if (result.isConfirmed) {
-                    // Trouver le formulaire en fonction de l'ID de l'article
-                    const form = document.getElementById('deleteArticleChercheurForm');
-                    // Modifier l'action du formulaire pour inclure l'ID de l'article
-                    form.submit();
+                    document.getElementById(`deleteArticleChercheurForm-${articleId}`).submit();
                 }
             });
         }
-
-        document.getElementById('revue').addEventListener('change', function () {
-            const revueSelected = this.value;
-            document.getElementById('volume').disabled = !revueSelected;
-            document.getElementById('pageDebut').disabled = !revueSelected;
-            document.getElementById('pageFin').disabled = !revueSelected;
-        });
 
 
     </script>

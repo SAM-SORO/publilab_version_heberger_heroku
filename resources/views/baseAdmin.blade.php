@@ -16,7 +16,6 @@
     <link rel="icon" href="{{ asset('assets/img/favicon.ico') }}" sizes="any" type="image/x-icon">
     <link rel="apple-touch-icon" href="{{ asset('assets/img/apple-touch-icon.png') }}">
 
-
     <style>
         .custom-link {
             text-decoration: none;
@@ -72,23 +71,40 @@
                                 </a>
                             </li>
                             <li class="mb-3">
-                                <a href="{{ route('admin.liste-articles') }}" class="{{ request()->routeIs('admin.liste-articles') ? 'active' : '' }}">
+                                <a href="{{ route('admin.listeArticles') }}" class="{{ request()->routeIs('admin.listeArticles') ? 'active' : '' }}">
                                     <span class="fas fa-book mr-3"></span>Articles
                                 </a>
                             </li>
+
                             <li class="mb-3">
-                                <a href="{{ route('admin.listeRevue') }}" class="{{ request()->routeIs('admin.listeRevue') ? 'active' : '' }}">
-                                    <span class="fas fa-list mr-3"></span>Revues
+                                <a href="{{ route('admin.listeTypeArticle') }}" class="{{ request()->routeIs('admin.listeTypeArticle') ? 'active' : '' }}">
+                                    <span class="fas fa-layer-group mr-3"></span>Types d'Articles
                                 </a>
                             </li>
+
+                            <li class="mb-3">
+                                <a href="{{ route('admin.listeTypePublications') }}" class="{{ request()->routeIs('admin.listeTypePublications') ? 'active' : '' }}">
+                                    <span class="fas fa-folder-open mr-3"></span>Types de Publications
+                                </a>
+                            </li>
+
+                            <li class="mb-3">
+                                <a href="{{ route('admin.listePublications') }}" class="{{ request()->routeIs('admin.listePublications') ? 'active' : '' }}">
+                                    <span class="fas fa-newspaper mr-3"></span>Publications
+                                </a>
+                            </li>
+
+
+
                             {{-- <li class="mb-3">
-                                <a href="#" class="{{ request()->routeIs('associer.article-revue') ? 'active' : '' }}">
-                                    <span class="fas fa-link mr-3"></span>Associer Article-Revue
+                                <a href="{{ route('admin.listeRevue') }}" class="{{ request()->routeIs('admin.listeRevue') ? 'active' : '' }}">
+                                    <span class="fas fa-list mr-3"></span>Publication
                                 </a>
                             </li> --}}
+
                             <li class="mb-3">
                                 <a href="{{ route('admin.listeBaseIndexation') }}" class="{{ request()->routeIs('admin.listeBaseIndexation') ? 'active' : '' }}">
-                                    <span class="fa-solid fa-house mr-3"></span>Bd indexation
+                                    <span class="fa-solid fa-house mr-3"></span>Bd Indexation
                                 </a>
                             </li>
 
@@ -105,7 +121,7 @@
                             </li>
 
                             <li class="mb-3">
-                                <a href="{{ route('admin.listeDoctorant') }}" class="{{ request()->routeIs('admin.listeDoctorant') ? 'active' : '' }}">
+                                <a href="{{ route('admin.listeDoctorants') }}" class="{{ request()->routeIs('admin.listeDoctorants') ? 'active' : '' }}">
                                     <span class="fas fa-user-graduate mr-3"></span>Doctorants
                                 </a>
                             </li>
@@ -139,6 +155,14 @@
                                     <span class="fas fa-university mr-3"></span>EDP
                                 </a>
                             </li>
+
+
+                            <li class="mb-3">
+                                <a href="{{ route('admin.profil') }}" class="{{ request()->routeIs('admin.profil') ? 'active' : '' }}">
+                                    <span class="fas fa-user mr-3"></span>Profil
+                                </a>
+                            </li>
+
                         </ul>
 
 

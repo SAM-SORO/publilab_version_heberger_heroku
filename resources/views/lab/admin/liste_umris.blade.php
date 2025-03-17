@@ -74,42 +74,197 @@
         <div class="row row-cols-1 row-cols-md-2 g-4">
             @foreach ($umris as $umri)
                 <div class="col mb-4">
-                    <div class="d-flex flex-column rounded shadow bg-white p-3 h-100">
-                        <div class="d-flex">
-                            <div class="ml-3">
-                                @if($umri->nomUMRI)
-                                    <p class="mb-1 font-weight-bold">{{ $umri->nomUMRI }}</p>
+                    <div class="card shadow h-100">
+                        <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+                            <h5 class="card-title mb-0">
+                                <i class="fas fa-building"></i> UMRI - {{ $umri->sigleUMRI }}
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <!-- Informations principales -->
+                            <div class="mb-4">
+                                <h6 class="card-subtitle mb-2 text-primary">{{ $umri->nomUMRI }}</h6>
+                                @if($umri->localisationUMRI)
+                                    <p class="mb-2">
+                                        <i class="fas fa-map-marker-alt text-secondary"></i>
+                                        <strong>Localisation:</strong> {{ $umri->localisationUMRI }}
+                                    </p>
                                 @endif
+                            </div>
 
-                                @if($umri->localisationUMI)
-                                    <p>Lieu : {{ $umri->localisationUMI }}</p>
+                            <!-- Direction -->
+                            <div class="mb-4">
+                                <h6 class="font-weight-bold text-info mb-2">
+                                    <i class="fas fa-user-tie"></i> Direction
+                                </h6>
+                                @if($umri->directeur)
+                                    <p class="mb-2">
+                                        <strong>Directeur:</strong>
+                                        {{ $umri->directeur->nomCherch }} {{ $umri->directeur->prenomCherch }}
+                                    </p>
                                 @endif
+                            </div>
 
-                                @if($umri->WhatsAppUMRI)
-                                    <p>WhatsApp: {{ $umri->WhatsAppUMRI }}</p>
+                            <!-- Secrétariat -->
+                            <div class="mb-4">
+                                <h6 class="font-weight-bold text-success mb-2">
+                                    <i class="fas fa-user-friends"></i> Secrétariat
+                                </h6>
+                                @if($umri->secretaireUMRI)
+                                    <p class="mb-2">
+                                        <strong>Secrétaire:</strong> {{ $umri->secretaireUMRI }}
+                                    </p>
                                 @endif
+                                @if($umri->contactSecretariatUMRI)
+                                    <p class="mb-2">
+                                        <i class="fas fa-phone text-secondary"></i>
+                                        <strong>Contact:</strong> {{ $umri->contactSecretariatUMRI }}
+                                    </p>
+                                @endif
+                                @if($umri->emailSecretariatUMRI)
+                                    <p class="mb-2">
+                                        <i class="fas fa-envelope text-secondary"></i>
+                                        <strong>Email:</strong>
+                                        <a href="mailto:{{ $umri->emailSecretariatUMRI }}">
+                                            {{ $umri->emailSecretariatUMRI }}
+                                        </a>
+                                    </p>
+                                @endif
+                            </div>
 
-                                @if($umri->emailUMRI)
-                                    <p>Email: {{ $umri->emailUMRI }}</p>
+                            <!-- Rattachement -->
+                            <div class="mb-4">
+                                <h6 class="font-weight-bold text-warning mb-2">
+                                    <i class="fas fa-sitemap"></i> Rattachement
+                                </h6>
+                                @if($umri->edp)
+                                    <p class="mb-2">
+                                        <strong>EDP :</strong> {{ $umri->edp->sigleEDP }}
+                                    </p>
                                 @endif
                             </div>
                         </div>
-                        <div class="d-flex justify-content-end mt-auto">
-                            <!-- Formulaire pour modifier un UMRI -->
-                            <form action="{{ route('admin.modifierUmris', $umri->idUMRI) }}" method="GET">
-                                @csrf
-                                <button class="btn btn-primary mr-2" type="submit">Modifier</button>
-                            </form>
 
-                            <form id="deleteUMRIForm" method="POST" style="display: inline;">
-                                @csrf
-                                @method('POST')
-                                <button type="button" class="btn btn-danger" onclick="confirmDelete({{ $umri->idUMRI }})">
-                                    <i class="fas fa-trash"></i> Supprimer
+                        <div class="card-footer bg-light">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <button type="button" class="btn btn-secondary btn-sm"
+                                        data-toggle="modal"
+                                        data-target="#detailsModal_{{ $umri->idUMRI }}">
+                                    <i class="fas fa-info-circle"></i> Détails
                                 </button>
-                            </form>
+                                <div>
+                                    <a href="{{ route('admin.modifierUmris', $umri->idUMRI) }}"
+                                       class="btn btn-outline-primary btn-sm mr-2">
+                                        <i class="fas fa-edit"></i> Modifier
+                                    </a>
+                                    <form id="deleteUmriForm_{{ $umri->idUMRI }}"
+                                        action="{{ route('admin.supprimerUmri', $umri->idUMRI) }}"
+                                        method="POST"
+                                        style="display: inline;">
+                                      @csrf
+                                      <button type="button" class="btn btn-outline-danger btn-sm"
+                                              onclick="confirmDelete({{ $umri->idUMRI }})">
+                                          <i class="fas fa-trash"></i> Supprimer
+                                      </button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
 
+                <!-- Modal Détails (à l'intérieur de la boucle foreach) -->
+                <div class="modal fade" id="detailsModal_{{ $umri->idUMRI }}" tabindex="-1" aria-hidden="true">
+                    <div class="modal-dialog modal-lg">
+                        <div class="modal-content">
+                            <div class="modal-header bg-secondary text-white">
+                                <h5 class="modal-title">
+                                    <i class="fas fa-info-circle"></i> Détails de l'UMRI
+                                </h5>
+                                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                                    <span aria-hidden="true">&times;</span>
+                                </button>
+                            </div>
+                            <div class="modal-body">
+                                <!-- Informations principales -->
+                                <div class="mb-4">
+                                    <h6 class="font-weight-bold text-primary mb-3">
+                                        <i class="fas fa-building"></i> Informations principales
+                                    </h6>
+                                    <p class="mb-2">
+                                        <strong>Sigle :</strong> {{ $umri->sigleUMRI }}
+                                    </p>
+                                    <p class="mb-2">
+                                        <strong>Nom :</strong> {{ $umri->nomUMRI }}
+                                    </p>
+                                    @if($umri->localisationUMRI)
+                                        <p class="mb-2">
+                                            <i class="fas fa-map-marker-alt text-secondary"></i>
+                                            <strong>Localisation :</strong> {{ $umri->localisationUMRI }}
+                                        </p>
+                                    @endif
+                                </div>
 
+                                <!-- Direction -->
+                                <div class="mb-4">
+                                    <h6 class="font-weight-bold text-info mb-3">
+                                        <i class="fas fa-user-tie"></i> Direction
+                                    </h6>
+                                    @if($umri->directeur)
+                                        <p class="mb-2">
+                                            <strong>Directeur :</strong>
+                                            {{ $umri->directeur->nomCherch }} {{ $umri->directeur->prenomCherch }}
+                                        </p>
+                                    @else
+                                        <p class="text-muted">Aucun directeur assigné</p>
+                                    @endif
+                                </div>
+
+                                <!-- Secrétariat -->
+                                <div class="mb-4">
+                                    <h6 class="font-weight-bold text-success mb-3">
+                                        <i class="fas fa-user-friends"></i> Secrétariat
+                                    </h6>
+                                    @if($umri->secretaireUMRI || $umri->contactSecretariatUMRI || $umri->emailSecretariatUMRI)
+                                        @if($umri->secretaireUMRI)
+                                            <p class="mb-2">
+                                                <strong>Secrétaire :</strong> {{ $umri->secretaireUMRI }}
+                                            </p>
+                                        @endif
+                                        @if($umri->contactSecretariatUMRI)
+                                            <p class="mb-2">
+                                                <i class="fas fa-phone text-secondary"></i>
+                                                <strong>Contact :</strong> {{ $umri->contactSecretariatUMRI }}
+                                            </p>
+                                        @endif
+                                        @if($umri->emailSecretariatUMRI)
+                                            <p class="mb-2">
+                                                <i class="fas fa-envelope text-secondary"></i>
+                                                <strong>Email :</strong>
+                                                <a href="mailto:{{ $umri->emailSecretariatUMRI }}">
+                                                    {{ $umri->emailSecretariatUMRI }}
+                                                </a>
+                                            </p>
+                                        @endif
+                                    @else
+                                        <p class="text-muted">Aucune information de secrétariat disponible</p>
+                                    @endif
+                                </div>
+
+                                <!-- Rattachement -->
+                                <div class="mb-4">
+                                    <h6 class="font-weight-bold text-warning mb-3">
+                                        <i class="fas fa-sitemap"></i> Rattachement
+                                    </h6>
+                                    @if($umri->edp)
+                                        <p class="mb-2">
+                                            <strong>EDP :</strong> {{ $umri->edp->sigleEDP }} - {{ $umri->edp->nomEDP }}
+                                        </p>
+                                    @else
+                                        <p class="text-muted">Aucun EDP de rattachement</p>
+                                    @endif
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -125,86 +280,202 @@
 
 <!-- Modal pour enregistrer un UMRI -->
 <div class="modal fade" id="addUmriModal" tabindex="-1" role="dialog" aria-labelledby="addUmriModalLabel" aria-hidden="true">
-<div class="modal-dialog modal-lg" role="document">
-    <div class="modal-content">
-        <div class="modal-header">
-            <h5 class="modal-title" id="addUmriModalLabel">Enregistrer un UMRI</h5>
-            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                <span aria-hidden="true">&times;</span>
-            </button>
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-dark text-white">
+                <h5 class="modal-title" id="addUmriModalLabel">
+                    <i class="fas fa-plus-circle"></i> Nouvel UMRI
+                </h5>
+                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form action="{{ route('admin.enregistrerUmris') }}" method="POST">
+                    @csrf
+
+                    <!-- Informations principales -->
+                    <div class="card shadow-sm mb-4">
+                        <div class="card-header bg-dark text-white">
+                            <h5 class="mb-0"><i class="fas fa-info-circle"></i> Informations principales</h5>
+                        </div>
+                        <div class="card-body">
+                            <!-- Sigle -->
+                            <div class="form-group mb-4">
+                                <label for="sigleUMRI" class="font-weight-bold">
+                                    Sigle de l'UMRI <span class="text-danger">*</span>
+                                </label>
+                                <input type="text" class="form-control form-control-lg @error('sigleUMRI') is-invalid @enderror"
+                                       id="sigleUMRI" name="sigleUMRI" placeholder="Ex: UMRI-01" required>
+                                @error('sigleUMRI')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
+
+                            <!-- Nom -->
+                            <div class="form-group mb-4">
+                                <label for="nomUMRI" class="font-weight-bold">
+                                    Nom de l'UMRI <span class="text-danger">*</span>
+                                </label>
+                                <input type="text" class="form-control @error('nomUMRI') is-invalid @enderror"
+                                       id="nomUMRI" name="nomUMRI" placeholder="Nom complet de l'UMRI" required>
+                                @error('nomUMRI')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
+
+                            <!-- Localisation -->
+                            <div class="form-group">
+                                <label for="localisationUMRI" class="font-weight-bold">
+                                    <i class="fas fa-map-marker-alt"></i> Localisation
+                                </label>
+                                <input type="text" class="form-control @error('localisationUMRI') is-invalid @enderror"
+                                       id="localisationUMRI" name="localisationUMRI" placeholder="Adresse de l'UMRI">
+                                @error('localisationUMRI')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Direction -->
+                    <div class="card shadow-sm mb-4">
+                        <div class="card-header bg-dark text-white">
+                            <h5 class="mb-0"><i class="fas fa-user-tie"></i> Direction</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="form-group">
+                                <label for="idDirecteurUMRI" class="font-weight-bold">Directeur</label>
+                                <select class="form-control select2 @error('idDirecteurUMRI') is-invalid @enderror"
+                                        id="idDirecteurUMRI" name="idDirecteurUMRI">
+                                    <option value="">Sélectionner un directeur</option>
+                                    @foreach($chercheurs as $chercheur)
+                                        <option value="{{ $chercheur->idCherch }}">
+                                            {{ $chercheur->prenomCherch }} {{ $chercheur->nomCherch }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                                @error('idDirecteurUMRI')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Secrétariat -->
+                    <div class="card shadow-sm mb-4">
+                        <div class="card-header bg-dark text-white">
+                            <h5 class="mb-0"><i class="fas fa-user-friends"></i> Secrétariat</h5>
+                        </div>
+                        <div class="card-body">
+                            <!-- Secrétaire -->
+                            <div class="form-group mb-4">
+                                <label for="secretaireUMRI" class="font-weight-bold">Nom du secrétaire</label>
+                                <input type="text" class="form-control @error('secretaireUMRI') is-invalid @enderror"
+                                       id="secretaireUMRI" name="secretaireUMRI" placeholder="Nom complet du secrétaire">
+                                @error('secretaireUMRI')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
+
+                            <!-- Contact -->
+                            <div class="form-group mb-4">
+                                <label for="contactSecretariatUMRI" class="font-weight-bold">
+                                    <i class="fas fa-phone"></i> Contact
+                                </label>
+                                <input type="text" class="form-control @error('contactSecretariatUMRI') is-invalid @enderror"
+                                       id="contactSecretariatUMRI" name="contactSecretariatUMRI"
+                                       placeholder="Numéro de téléphone">
+                                @error('contactSecretariatUMRI')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
+
+                            <!-- Email -->
+                            <div class="form-group">
+                                <label for="emailSecretariatUMRI" class="font-weight-bold">
+                                    <i class="fas fa-envelope"></i> Email
+                                </label>
+                                <input type="email" class="form-control @error('emailSecretariatUMRI') is-invalid @enderror"
+                                       id="emailSecretariatUMRI" name="emailSecretariatUMRI"
+                                       placeholder="adresse@email.com">
+                                @error('emailSecretariatUMRI')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- EDP -->
+                    <div class="card shadow-sm mb-4">
+                        <div class="card-header bg-dark text-white">
+                            <h5 class="mb-0"><i class="fas fa-building"></i> Rattachement</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="form-group">
+                                <label for="idEDP" class="font-weight-bold">
+                                    EDP de rattachement <span class="text-danger">*</span>
+                                </label>
+                                <select class="form-control select2 @error('idEDP') is-invalid @enderror"
+                                        id="idEDP" name="idEDP" required>
+                                    <option value="">Sélectionner un EDP</option>
+                                    @foreach($edps as $edp)
+                                        <option value="{{ $edp->idEDP }}">
+                                            {{ $edp->sigleEDP }} - {{ $edp->nomEDP }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                                @error('idEDP')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="modal-footer bg-light">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                            <i class="fas fa-times"></i> Fermer
+                        </button>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> Enregistrer
+                        </button>
+                    </div>
+                </form>
+            </div>
         </div>
-        <div class="modal-body">
-            <form action="{{ route('admin.enregistrerUmris') }}" method="POST">
-                @csrf
-                <div class="form-group mb-4">
-                    <label for="nomUMRI">Nom de l'UMRI <span class="text-danger">*</span></label>
-                    <input type="text" class="form-control @error('nomUMRI') is-invalid @enderror" id="nomUMRI" name="nomUMRI" placeholder="Nom de l'UMRI" required>
-                    @error('nomUMRI')
-                        <div class="invalid-feedback">{{ $message }}</div>
-                    @enderror
-                </div>
-
-                <div class="form-group mb-4">
-                    <label for="localisationUMI">Localisation</label>
-                    <input type="text" class="form-control @error('localisationUMI') is-invalid @enderror" id="localisationUMI" name="localisationUMI" placeholder="Localisation">
-                    @error('localisationUMI')
-                        <div class="invalid-feedback">{{ $message }}</div>
-                    @enderror
-                </div>
-
-                <div class="form-group mb-4">
-                    <label for="WhatsAppUMRI">WhatsAppUMRI</label>
-                    <input type="text" class="form-control @error('WhatsAppUMRI') is-invalid @enderror" id="WhatsAppUMRI" name="WhatsAppUMRI" placeholder="WhatsApp">
-                    @error('WhatsAppUMRI')
-                        <div class="invalid-feedback">{{ $message }}</div>
-                    @enderror
-                </div>
-
-                <div class="form-group mb-4">
-                    <label for="emailUMRI">Email</label>
-                    <input type="email" class="form-control @error('emailUMRI') is-invalid @enderror" id="emailUMRI" name="emailUMRI" placeholder="Email">
-                    @error('emailUMRI')
-                        <div class="invalid-feedback">{{ $message }}</div>
-                    @enderror
-                </div>
-
-                <div class="form-group mb-4">
-                    <label for="idEDP">Sélectionner EDP <span class="text-danger">*</span></label>
-                    <select class="form-control @error('idEDP') is-invalid @enderror" id="idEDP" name="idEDP" multiple required>
-                        @foreach ($edps as $edp)
-                            <option value="{{ $edp->idEDP }}">{{ $edp->nomEDP }}</option>
-                        @endforeach
-                    </select>
-                    @error('idEDP')
-                        <div class="invalid-feedback">{{ $message }}</div>
-                    @enderror
-                </div>
-
-                <div class="form-group text-center mt-4">
-                    <button type="submit" class="btn btn-primary">Enregistrer</button>
-                </div>
-            </form>
-        </div>
-
     </div>
-</div>
 </div>
 
 @endsection
 
 @section('scripts')
 <script>
+    $(document).ready(function() {
+        $('#idDirecteurUMRI').select2({
+            placeholder: 'Sélectionner un directeur',
+            allowClear: true,
+            width: '100%',
+            maximumSelectionLength: 1,
+            dropdownParent: $('#addUmriModal')
+        });
 
-    $('#idEDP').select2({
-        allowClear: true,
-        maximumSelectionLength: 1, // Limite la sélection à une seule option
-        width: '100%' // Ajuste la largeur pour un affichage responsive
+        $('#idEDP').select2({
+            placeholder: 'Sélectionner un EDP',
+            allowClear: true,
+            width: '100%',
+            maximumSelectionLength: 1,
+            dropdownParent: $('#addUmriModal')
+        });
+
+
+        $('.select2-selection').css('height', '40px'); // Applique la hauteur après initialisation
+
     });
 
     function confirmDelete(umriId) {
         Swal.fire({
-            title: "Êtes-vous sûr de vouloir supprimer cet UMRI ?",
-            text: "Cette action est irréversible et supprimera également les laboratoires associés.",
+            title: "Êtes-vous sûr de vouloir supprimer cette UMRI ?",
+            text: "Cette action est irréversible et ne peut être effectuée si des laboratoires ou chercheurs sont associés.",
             icon: "warning",
             showCancelButton: true,
             confirmButtonColor: "#3085d6",
@@ -213,14 +484,32 @@
             cancelButtonText: "Annuler"
         }).then((result) => {
             if (result.isConfirmed) {
-                // Trouver le formulaire et mettre à jour l'URL de l'action
-                const form = document.getElementById('deleteUMRIForm');
-                form.action = '/admin/supprimer-umris/' + umriId;
-
-                // Soumettre le formulaire
+                const form = document.getElementById('deleteUmriForm_' + umriId);
                 form.submit();
             }
         });
     }
 </script>
+@endsection
+
+@section('styles')
+<style>
+    .modal-dialog {
+        margin-top: 2rem;
+        display: flex;
+        align-items: flex-start;
+        min-height: calc(100% - 4rem);
+    }
+
+    .modal {
+        overflow-y: auto;
+    }
+
+    /* Pour assurer que le modal est bien centré horizontalement */
+    .modal-dialog.modal-lg {
+        max-width: 800px;
+        margin-left: auto;
+        margin-right: auto;
+    }
+</style>
 @endsection

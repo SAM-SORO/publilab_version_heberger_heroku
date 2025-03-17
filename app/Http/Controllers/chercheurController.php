@@ -6,8 +6,10 @@ use App\Models\Article;
 use App\Models\Chercheur;
 use App\Models\Contenir;
 use App\Models\Document;
-use App\Models\Revue;
+use App\Models\Publication;
 use App\Models\BdIndexation;
+use App\Models\TypeArticle;
+use App\Models\Doctorant;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -24,7 +26,7 @@ class chercheurController extends Controller
 
     public function index()
     {
-        // Récupérer le chercheur connectép
+        // Récupérer le chercheur connecté
         $chercheurConnecte = Auth::user();
 
         // Vérifier si un chercheur est connecté
@@ -32,87 +34,182 @@ class chercheurController extends Controller
             return redirect()->route('login')->with('error', 'Vous devez être connecté pour accéder à cette page.');
         }
 
-        // Compter le nombre d'articles associés au chercheur connecté
-        // $NbreArticles = $chercheurConnecte->articles()->count();
-
-        $NbreArticles = Article::whereHas('chercheurs', function ($query) use ($chercheurConnecte) {
-            $query->where('chercheur_article.idCherch', $chercheurConnecte->idCherch);
+        // Compter les articles où le chercheur est directement lié via chercheur_article
+        $articlesDirects = Article::whereHas('chercheurs', function ($query) use ($chercheurConnecte) {
+            $query->where('chercheurs.idCherch', $chercheurConnecte->idCherch);
         })->count();
 
+        // Compter les articles où le chercheur est mentionné dans doctorant_article_chercheur
+        $articlesIndirects = Article::whereExists(function ($query) use ($chercheurConnecte) {
+            $query->select(DB::raw(1))
+                  ->from('doctorant_article_chercheur')
+                  ->whereRaw('doctorant_article_chercheur.idArticle = articles.idArticle')
+                  ->where('doctorant_article_chercheur.idCherch', $chercheurConnecte->idCherch);
+        })->count();
+
+        // Compter le nombre total d'articles uniques
+        $NbreArticles = Article::where(function($query) use ($chercheurConnecte) {
+            // Articles où le chercheur est directement lié via chercheur_article
+            $query->whereHas('chercheurs', function($q) use ($chercheurConnecte) {
+                $q->where('chercheurs.idCherch', $chercheurConnecte->idCherch);
+            });
+
+            // OU articles où le chercheur est mentionné dans doctorant_article_chercheur
+            $query->orWhereExists(function($q) use ($chercheurConnecte) {
+                $q->select(DB::raw(1))
+                  ->from('doctorant_article_chercheur')
+                  ->whereRaw('doctorant_article_chercheur.idArticle = articles.idArticle')
+                  ->where('doctorant_article_chercheur.idCherch', $chercheurConnecte->idCherch);
+            });
+        })->count();
 
         // Retourner la vue avec les données
         return view('lab.chercheur.index', compact('NbreArticles'));
     }
 
-
-    public function listeArticles()
+    public function listeArticles(Request $request)
     {
-        // Récupérer le chercheur connecté
-        $chercheurConnecte = Auth::user(); // Récupère le chercheur connecté
+        try {
+            $chercheur = Auth::user();
 
-        // Récupérer les articles liés au chercheur connecté, ordonnés par date de publication (du plus récent au plus ancien)
-        $articles = Article::whereHas('chercheurs', function ($query) use ($chercheurConnecte) {
-            $query->where('chercheur_article.idCherch', $chercheurConnecte->idCherch); // Spécifier la table 'chercheur_article'
-        })
-        ->with(['revues' => function ($query) {
-            $query->orderBy('article_revue.datePubArt', 'desc'); // Ordre décroissant
-        }])
-        ->orderByDesc('created_at') // Si la colonne 'created_at' correspond à la date d'ajout des articles
-        ->paginate(12);
+            // Initialiser la requête de base pour inclure les deux types de relations
+            $articlesQuery = Article::with(['publication', 'typeArticle', 'chercheurs', 'doctorants'])
+                ->where(function($query) use ($chercheur) {
+                    // Articles où le chercheur est directement lié via chercheur_article
+                    $query->whereHas('chercheurs', function($q) use ($chercheur) {
+                        $q->where('chercheurs.idCherch', $chercheur->idCherch);
+                    });
 
-        // Récupérer les années distinctes des dates de publication
-        $annees = DB::table('article_revue')
-            ->selectRaw('YEAR(datePubArt) as year')
-            ->distinct()
-            ->orderBy('year', 'desc') // Ordre décroissant
-            ->pluck('year');
+                    // OU articles où le chercheur est mentionné dans doctorant_article_chercheur
+                    $query->orWhereExists(function($q) use ($chercheur) {
+                        $q->select(DB::raw(1))
+                          ->from('doctorant_article_chercheur')
+                          ->whereRaw('doctorant_article_chercheur.idArticle = articles.idArticle')
+                          ->where('doctorant_article_chercheur.idCherch', $chercheur->idCherch);
+                    });
+                });
 
-        // Récupérer toutes les revues et chercheurs
-        $revues = Revue::all();
-        $chercheurs = Chercheur::all();
+            // Récupérer les paramètres de filtre
+            $query = $request->input('query');
+            $annee = $request->input('annee');
+            $typeArticleId = $request->input('typeArticle');
+            $typeAuteur = $request->input('typeAuteur');
 
-        // Retourner la vue avec les données
-        return view('lab.chercheur.liste_article', compact('articles', 'annees', 'revues', 'chercheurs'));
+            // Filtre par mot-clé
+            if ($query) {
+                $articlesQuery->where(function ($queryBuilder) use ($query) {
+                    // Recherche dans les colonnes de l'article
+                    $queryBuilder->where('titreArticle', 'like', '%' . $query . '%')
+                        ->orWhere('resumeArticle', 'like', '%' . $query . '%')
+                        ->orWhere('doi', 'like', '%' . $query . '%');
+
+                    // Recherche dans la publication (titre et éditeur)
+                    $queryBuilder->orWhereHas('publication', function ($pubQuery) use ($query) {
+                        $pubQuery->where('titrePub', 'like', '%' . $query . '%')
+                            ->orWhere('editeurPub', 'like', '%' . $query . '%');
+                    });
+
+                    // Recherche par chercheur (nom + prénom)
+                    $queryBuilder->orWhereHas('chercheurs', function ($chercheurQuery) use ($query) {
+                        $chercheurQuery->whereRaw("LOWER(CONCAT(TRIM(prenomCherch), ' ', TRIM(nomCherch))) LIKE LOWER(?)", ['%' . trim($query) . '%'])
+                            ->orWhereRaw("LOWER(CONCAT(TRIM(nomCherch), ' ', TRIM(prenomCherch))) LIKE LOWER(?)", ['%' . trim($query) . '%'])
+                            ->orWhere('prenomCherch', 'like', '%' . $query . '%')
+                            ->orWhere('nomCherch', 'like', '%' . $query . '%');
+                    });
+
+                    // Recherche par doctorant (nom + prénom)
+                    $queryBuilder->orWhereHas('doctorants', function ($doctorantQuery) use ($query) {
+                        $doctorantQuery->whereRaw("LOWER(CONCAT(TRIM(prenomDoc), ' ', TRIM(nomDoc))) LIKE LOWER(?)", ['%' . trim($query) . '%'])
+                            ->orWhereRaw("LOWER(CONCAT(TRIM(nomDoc), ' ', TRIM(prenomDoc))) LIKE LOWER(?)", ['%' . trim($query) . '%'])
+                            ->orWhere('prenomDoc', 'like', '%' . $query . '%')
+                            ->orWhere('nomDoc', 'like', '%' . $query . '%');
+                    });
+                });
+            }
+
+            // Filtre par année
+            if ($annee && $annee != 'Tous') {
+                $articlesQuery->whereYear('datePubArt', $annee);
+            }
+
+            // Filtre par type d'article
+            if ($typeArticleId && $typeArticleId != 'Tous') {
+                $articlesQuery->where('idTypeArticle', $typeArticleId);
+            }
+
+            // Filtre par type d'auteur
+            if ($typeAuteur && $typeAuteur != 'Tous') {
+                $articlesQuery->where('typeAuteur', $typeAuteur);
+            }
+
+            // Récupérer les articles filtrés et paginés
+            $articles = $articlesQuery->orderBy('created_at', 'desc')->paginate(12);
+
+            // Conserver les paramètres de filtre dans la pagination
+            $articles->appends([
+                'query' => $query,
+                'annee' => $annee,
+                'typeArticle' => $typeArticleId,
+                'typeAuteur' => $typeAuteur
+            ]);
+
+            // Récupérer les années distinctes pour le filtre
+            $annees = DB::table('articles')
+                ->selectRaw('YEAR(datePubArt) as year')
+                ->distinct()
+                ->whereNotNull('datePubArt')
+                ->orderBy('year', 'desc')
+                ->pluck('year');
+
+            // Récupérer les données pour les autres filtres
+            $publications = Publication::orderBy('titrePub', 'asc')->get();
+            $chercheurs = Chercheur::orderBy('nomCherch', 'asc')
+                ->orderBy('prenomCherch', 'asc')
+                ->get();
+            $doctorants = Doctorant::orderBy('nomDoc', 'asc')
+                ->orderBy('prenomDoc', 'asc')
+                ->get();
+            $typeArticles = TypeArticle::orderBy('nomTypeArticle', 'asc')->get();
+
+            return view('lab.chercheur.liste_article', compact(
+                'articles',
+                'annees',
+                'publications',
+                'typeArticles',
+                'chercheurs',
+                'doctorants',
+                'query',
+                'annee',
+                'typeArticleId',
+                'typeAuteur'
+            ));
+
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'Une erreur est survenue : ' . $e->getMessage());
+        }
     }
 
 
 
 
-    //fait pour l'autre profil
     public function enregistrerArticle(Request $request)
     {
-        $chercheurConnecte = Auth::user(); // Récupère le chercheur connecté
-
-        // Validation des champs avec messages personnalisés
         $validatedData = $request->validate([
-            'titreArticle' => 'required|string|max:255', // Champ obligatoire
+            'titreArticle' => 'required|string|max:200',
+            'lienArticle' => 'nullable|string|url',
             'resumeArticle' => 'nullable|string',
-            'doi' => 'nullable|string|max:255',
+            'doi' => 'nullable|string|max:100',
             'chercheurs' => 'nullable|array',
             'chercheurs.*' => 'exists:chercheurs,idCherch',
-            'revue' => 'nullable|exists:revues,idRevue', // Revue est nullable
-            'datePubArt' => 'nullable|date', // Nullable dans la table pivot
+            'doctorants' => 'nullable|array',
+            'doctorants.*' => 'exists:doctorants,idDoc',
+            'idPub' => 'nullable|exists:publications,idPub',
+            'datePubArt' => 'nullable|date',
             'volume' => 'nullable|integer',
             'numero' => 'nullable|integer',
             'pageDebut' => 'nullable|integer|min:1',
-            'pageFin' => 'nullable|integer|gte:pageDebut', // Si pageFin est fourni, il doit être >= pageDebut
-        ], [
-            'titreArticle.required' => 'Le titre de l\'article est obligatoire.',
-            'titreArticle.string' => 'Le titre de l\'article doit être une chaîne de caractères.',
-            'titreArticle.max' => 'Le titre de l\'article ne doit pas dépasser 255 caractères.',
-            'resumeArticle.string' => 'Le résumé doit être une chaîne de caractères.',
-            'doi.string' => 'Le DOI doit être une chaîne de caractères.',
-            'doi.max' => 'Le DOI ne doit pas dépasser 255 caractères.',
-            'chercheurs.array' => 'La liste des chercheurs doit être un tableau.',
-            'chercheurs.*.exists' => 'Un des chercheurs sélectionnés n\'existe pas dans la base de données.',
-            'revue.exists' => 'La revue sélectionnée n\'existe pas dans la base de données.',
-            'datePubArt.date' => 'La date de publication doit être une date valide.',
-            'volume.integer' => 'Le volume doit être un entier.',
-            'numero.integer' => 'Le numéro doit être un entier.',
-            'pageDebut.integer' => 'La page de début doit être un entier.',
-            'pageDebut.min' => 'La page de début doit être au moins égale à 1.',
-            'pageFin.integer' => 'La page de fin doit être un entier.',
-            'pageFin.gte' => 'La page de fin doit être supérieure ou égale à la page de début.',
+            'pageFin' => 'nullable|integer|gte:pageDebut',
+            'idTypeArticle' => 'nullable|exists:type_articles,idTypeArticle'
         ]);
 
         DB::beginTransaction();
@@ -121,123 +218,220 @@ class chercheurController extends Controller
             // Créer un nouvel article
             $article = new Article();
             $article->titreArticle = $validatedData['titreArticle'];
+            $article->lienArticle = $validatedData['lienArticle'] ?? null;
             $article->resumeArticle = $validatedData['resumeArticle'] ?? null;
             $article->doi = $validatedData['doi'] ?? null;
+            $article->datePubArt = $validatedData['datePubArt'] ?? null;
+            $article->numero = $validatedData['numero'] ?? null;
+            $article->volume = $validatedData['volume'] ?? null;
+            $article->pageDebut = $validatedData['pageDebut'] ?? null;
+            $article->pageFin = $validatedData['pageFin'] ?? null;
+            $article->idPub = $validatedData['idPub'] ?? null;
+            $article->idTypeArticle = $validatedData['idTypeArticle'] ?? null;
             $article->save();
 
-            DB::transaction(function () use ($article, $validatedData, $chercheurConnecte) {
-                // Associer les chercheurs
-                if (empty($validatedData['chercheurs'])) {
-                    $article->chercheurs()->attach($chercheurConnecte->idCherch);
-                } else {
-                    $article->chercheurs()->attach($validatedData['chercheurs']);
+            // Récupérer le chercheur connecté
+            $chercheurConnecte = Auth::user();
+
+            // S'assurer que le chercheur connecté est inclus dans la liste des chercheurs
+            if (empty($validatedData['chercheurs'])) {
+                $validatedData['chercheurs'] = [$chercheurConnecte->idCherch];
+            } elseif (!in_array($chercheurConnecte->idCherch, $validatedData['chercheurs'])) {
+                $validatedData['chercheurs'][] = $chercheurConnecte->idCherch;
+            }
+
+            // Si des doctorants sont sélectionnés
+            if (!empty($validatedData['doctorants'])) {
+                foreach ($validatedData['doctorants'] as $doctorantId) {
+                    // Pour chaque chercheur, créer une entrée dans doctorant_article_chercheur
+                    foreach ($validatedData['chercheurs'] as $chercheurId) {
+                        DB::table('doctorant_article_chercheur')->insert([
+                            'idArticle' => $article->idArticle,
+                            'idDoc' => $doctorantId,
+                            'idCherch' => $chercheurId
+                        ]);
+                    }
+                }
+            } else {
+                // Si aucun doctorant n'est sélectionné, associer les chercheurs à l'article avec leur rang
+                $chercheurData = [];
+                foreach ($validatedData['chercheurs'] as $index => $chercheurId) {
+                    $chercheurData[$chercheurId] = ['rang' => $index + 1];
                 }
 
-                // Associer la revue
-                if (!empty($validatedData['revue'])) {
-                    $article->revues()->attach($validatedData['revue'], [
-                        'datePubArt' => $validatedData['datePubArt'] ?? null,
-                        'volume' => $validatedData['volume'] ?? null,
-                        'numero' => $validatedData['numero'] ?? null,
-                        'pageDebut' => $validatedData['pageDebut'] ?? null,
-                        'pageFin' => $validatedData['pageFin'] ?? null,
-                    ]);
-                }
-            });
-            // Si tout s'est bien passé, valider la transaction
+                // Attacher les chercheurs à l'article
+                $article->chercheurs()->attach($chercheurData);
+            }
+
             DB::commit();
-
-            return redirect()->route('chercheur.espace')->with('success', 'Article enregistré avec succès.');
+            return redirect()->route('chercheur.listeArticles')->with('success', 'Article enregistré avec succès.');
         } catch (\Exception $e) {
-            // Si une erreur survient, annuler toutes les modifications
-            DB::rollBack();
-
-            return redirect()->back()->with('error', 'Une erreur est survenue lors de l\'enregistrement : ' . $e->getMessage());
+            DB::rollback();
+            return redirect()->back()->with('error', "Une erreur est survenue : " . $e->getMessage());
         }
     }
 
 
 
-    public function modifierArticle($idArticle)
+    public function modifierArticle($id)
     {
-        // Récupérer l'article à modifier avec ses relations
-        $article = Article::with('revues', 'chercheurs')->findOrFail($idArticle);
+        try {
+            $article = Article::with(['chercheurs', 'doctorants', 'publication', 'typeArticle'])->findOrFail($id);
 
-        // Vérifier si l'utilisateur connecté est autorisé à modifier cet article
-        $chercheurConnecte = Auth::user();
-        if (!$article->chercheurs->contains($chercheurConnecte->idCherch)) {
-            return redirect()->route('chercheur.espace')->with('error', 'Vous n\'êtes pas autorisé à modifier cet article.');
+            // Vérifier que l'article appartient bien au chercheur connecté
+            $chercheurConnecte = Auth::user();
+            $articleAppartientAuChercheur = $article->chercheurs->contains('idCherch', $chercheurConnecte->idCherch) ||
+                                            DB::table('doctorant_article_chercheur')
+                                                ->where('idArticle', $article->idArticle)
+                                                ->where('idCherch', $chercheurConnecte->idCherch)
+                                                ->exists();
+
+            if (!$articleAppartientAuChercheur) {
+                return redirect()->route('chercheur.listeArticles')
+                    ->with('error', 'Vous n\'êtes pas autorisé à modifier cet article.');
+            }
+
+            // Récupérer les données pour les listes déroulantes, triées par ordre alphabétique
+            $publications = Publication::orderBy('titrePub', 'asc')->get();
+            $chercheurs = Chercheur::orderBy('nomCherch', 'asc')->orderBy('prenomCherch', 'asc')->get();
+            $doctorants = Doctorant::orderBy('nomDoc', 'asc')->orderBy('prenomDoc', 'asc')->get();
+            $typeArticles = TypeArticle::orderBy('nomTypeArticle', 'asc')->get();
+
+            // Récupérer les IDs des chercheurs associés à cet article
+            $chercheurIds = [];
+
+            // 1. Récupérer les chercheurs directement associés (via chercheur_article)
+            $chercheurIds = $article->chercheurs->pluck('idCherch')->toArray();
+
+            // 2. Si l'article a des doctorants, récupérer aussi les chercheurs associés via doctorant_article_chercheur
+            if ($article->doctorants->isNotEmpty()) {
+                // Récupérer les chercheurs associés via la table doctorant_article_chercheur
+                $chercheurIdsFromDoctorants = DB::table('doctorant_article_chercheur')
+                    ->where('idArticle', $article->idArticle)
+                    ->pluck('idCherch')
+                    ->toArray();
+
+                // Fusionner les deux listes et éliminer les doublons
+                $chercheurIds = array_unique(array_merge($chercheurIds, $chercheurIdsFromDoctorants));
+            }
+
+            // Récupérer les IDs des doctorants associés à cet article
+            $doctorantIds = $article->doctorants->pluck('idDoc')->toArray();
+
+            return view('lab.chercheur.modifier_article', compact(
+                'article',
+                'publications',
+                'chercheurs',
+                'doctorants',
+                'typeArticles',
+                'chercheurIds',
+                'doctorantIds'
+            ));
+        } catch (\Exception $e) {
+            return redirect()->route('chercheur.listeArticles')
+                ->with('error', 'Une erreur est survenue : ' . $e->getMessage());
         }
-
-        $revues = Revue::all();
-        $chercheurs = Chercheur::all();
-
-        // Retourner la vue
-        return view('lab.chercheur.modifier_article', compact('article', 'revues', 'chercheurs'));
-
     }
 
 
 
-    public function updateArticle(Request $request, $idArticle)
+    public function updateArticle(Request $request, $id)
     {
-        $chercheurConnecte = Auth::user(); // Récupère le chercheur connecté
-
-        // Validation des champs
+        // Validation des données
         $validatedData = $request->validate([
-            'titreArticle' => 'required|string|max:255', // Le titre est obligatoire
+            'titreArticle' => 'required|string|max:200',
+            'lienArticle' => 'nullable|string|url',
             'resumeArticle' => 'nullable|string',
-            'doi' => 'nullable|string|max:255',
+            'doi' => 'nullable|string|max:100',
             'chercheurs' => 'nullable|array',
             'chercheurs.*' => 'exists:chercheurs,idCherch',
-            'revue' => 'nullable|exists:revues,idRevue', // Revue est nullable
+            'doctorants' => 'nullable|array',
+            'doctorants.*' => 'exists:doctorants,idDoc',
+            'idPub' => 'nullable|exists:publications,idPub',
             'datePubArt' => 'nullable|date',
             'volume' => 'nullable|integer',
             'numero' => 'nullable|integer',
             'pageDebut' => 'nullable|integer|min:1',
             'pageFin' => 'nullable|integer|gte:pageDebut',
+            'idTypeArticle' => 'nullable|exists:type_articles,idTypeArticle'
         ]);
 
         DB::beginTransaction();
 
         try {
-            // Récupérer l'article à modifier
-            $article = Article::findOrFail($idArticle);
-            $article->titreArticle = $validatedData['titreArticle'];
-            $article->resumeArticle = $validatedData['resumeArticle'] ?? $article->resumeArticle; // Conserver l'ancien résumé si non fourni
-            $article->doi = $validatedData['doi'] ?? $article->doi; // Conserver l'ancien DOI si non fourni
-            $article->save();
+            // Récupérer l'article
+            $article = Article::findOrFail($id);
 
-            // Mettre à jour les chercheurs et la revue si nécessaire
-            DB::transaction(function () use ($article, $validatedData, $chercheurConnecte) {
-                // Associer ou dissocier les chercheurs
-                if (empty($validatedData['chercheurs'])) {
-                    $article->chercheurs()->attach($chercheurConnecte->idCherch);
-                } else {
-                    $article->chercheurs()->sync($validatedData['chercheurs']); // Remplace les chercheurs existants
+            // Vérifier que l'article appartient bien au chercheur connecté
+            $chercheurConnecte = Auth::user();
+            $articleAppartientAuChercheur = $article->chercheurs->contains('idCherch', $chercheurConnecte->idCherch) ||
+                                            DB::table('doctorant_article_chercheur')
+                                                ->where('idArticle', $article->idArticle)
+                                                ->where('idCherch', $chercheurConnecte->idCherch)
+                                                ->exists();
+
+            if (!$articleAppartientAuChercheur) {
+                return redirect()->route('chercheur.listeArticles')
+                    ->with('error', 'Vous n\'êtes pas autorisé à modifier cet article.');
+            }
+
+            // Mettre à jour les informations de base de l'article
+            $article->update([
+                'titreArticle' => $validatedData['titreArticle'],
+                'lienArticle' => $validatedData['lienArticle'] ?? null,
+                'resumeArticle' => $validatedData['resumeArticle'] ?? null,
+                'doi' => $validatedData['doi'] ?? null,
+                'datePubArt' => $validatedData['datePubArt'] ?? null,
+                'numero' => $validatedData['numero'] ?? null,
+                'volume' => $validatedData['volume'] ?? null,
+                'pageDebut' => $validatedData['pageDebut'] ?? null,
+                'pageFin' => $validatedData['pageFin'] ?? null,
+                'idPub' => $validatedData['idPub'] ?? null,
+                'idTypeArticle' => $validatedData['idTypeArticle'] ?? null,
+            ]);
+
+            // Supprimer toutes les anciennes associations
+            DB::table('doctorant_article_chercheur')->where('idArticle', $article->idArticle)->delete();
+            $article->chercheurs()->detach(); // Détacher tous les chercheurs
+            $article->doctorants()->detach(); // Détacher tous les doctorants
+
+            // S'assurer que le chercheur connecté est inclus dans la liste des chercheurs
+            if (!in_array($chercheurConnecte->idCherch, $validatedData['chercheurs'])) {
+                $validatedData['chercheurs'][] = $chercheurConnecte->idCherch;
+            }
+
+            // Si des doctorants sont sélectionnés, associer les chercheurs à ces doctorants
+            if (!empty($validatedData['doctorants'])) {
+                $article->save();
+
+                foreach ($validatedData['doctorants'] as $doctorantId) {
+                    // Pour chaque chercheur, on les associe avec le doctorant
+                    foreach ($validatedData['chercheurs'] as $chercheurId) {
+                        DB::table('doctorant_article_chercheur')->insert([
+                            'idArticle' => $article->idArticle,
+                            'idDoc' => $doctorantId,
+                            'idCherch' => $chercheurId,
+                        ]);
+                    }
+                }
+            } else {
+                // Si aucun doctorant n'est sélectionné, associer les chercheurs à l'article avec leur rang
+                $chercheurData = [];
+                foreach ($validatedData['chercheurs'] as $index => $chercheurId) {
+                    $chercheurData[$chercheurId] = ['rang' => $index + 1];
                 }
 
-                // Mettre à jour ou associer la revue
-                if (!empty($validatedData['revue'])) {
-                    $article->revues()->sync([$validatedData['revue'] => [
-                        'datePubArt' => $validatedData['datePubArt'] ?? null,
-                        'volume' => $validatedData['volume'] ?? null,
-                        'numero' => $validatedData['numero'] ?? null,
-                        'pageDebut' => $validatedData['pageDebut'] ?? null,
-                        'pageFin' => $validatedData['pageFin'] ?? null,
-                    ]]);
-                }
-            });
+                // Attacher les chercheurs à l'article
+                $article->chercheurs()->attach($chercheurData);
 
-            // Si tout s'est bien passé, valider la transaction
+                $article->save();
+            }
+
             DB::commit();
-
-            return redirect()->route('chercheur.espace')->with('success', 'Modifications enregistrées avec succès.');
+            return redirect()->route('chercheur.listeArticles')->with('success', 'Article modifié avec succès.');
         } catch (\Exception $e) {
-            // Si une erreur survient, annuler toutes les modifications
-            DB::rollBack();
-
-            return redirect()->back()->with('error', 'Une erreur est survenue lors de l\'enregistrement des modifications : ' . $e->getMessage());
+            DB::rollback();
+            return redirect()->back()->with('error', "Une erreur est survenue : " . $e->getMessage());
         }
     }
 
@@ -248,59 +442,110 @@ class chercheurController extends Controller
     {
         // Vérifiez si l'utilisateur est authentifié
         if (!Auth::check()) {
-            return redirect()->route('login'); // Rediriger vers la page de connexion si l'utilisateur n'est pas authentifié
+            return redirect()->route('login')->with('error', 'Vous devez être connecté pour effectuer une recherche.');
         }
 
-        // Récupérer le terme de recherche, l'année de filtre, et le chercheur connecté
+        $chercheurConnecte = Auth::user();
         $query = $request->input('query');
         $annee = $request->input('annee');
-        $chercheurConnecte = Auth::user(); // Récupère le chercheur connecté
 
         // Base de la requête : récupérer tous les articles du chercheur connecté
-        $articlesQuery = Article::whereHas('chercheurs', function ($queryBuilder) use ($chercheurConnecte) {
-            $queryBuilder->where('chercheurs.idCherch', $chercheurConnecte->idCherch);
-        });
+        $articlesQuery = Article::with(['publication', 'typeArticle', 'chercheurs', 'doctorants'])
+            ->where(function($query) use ($chercheurConnecte) {
+                // Articles où le chercheur est directement lié via chercheur_article
+                $query->whereHas('chercheurs', function($q) use ($chercheurConnecte) {
+                    $q->where('chercheurs.idCherch', $chercheurConnecte->idCherch);
+                });
+
+                // OU articles où le chercheur est mentionné dans doctorant_article_chercheur
+                $query->orWhereExists(function($q) use ($chercheurConnecte) {
+                    $q->select(DB::raw(1))
+                      ->from('doctorant_article_chercheur')
+                      ->whereRaw('doctorant_article_chercheur.idArticle = articles.idArticle')
+                      ->where('doctorant_article_chercheur.idCherch', $chercheurConnecte->idCherch);
+                });
+            });
 
         // Ajouter les conditions de recherche selon le terme
         if ($query) {
             $articlesQuery->where(function ($queryBuilder) use ($query) {
                 $queryBuilder->where('titreArticle', 'like', '%' . $query . '%')
                              ->orWhere('resumeArticle', 'like', '%' . $query . '%')
-                             ->orWhereHas('revues', function ($revueQuery) use ($query) {
-                                 // Utilisation de 'nomRevue' à la place de 'titreRevue'
-                                 $revueQuery->where('nomRevue', 'like', '%' . $query . '%');
-                             })
-                             // Recherche par prénom ou nom des chercheurs associés à l'article
-                             ->orWhereHas('chercheurs', function ($chercheurQuery) use ($query) {
-                                 $chercheurQuery->where('prenomCherch', 'like', '%' . $query . '%')
-                                                ->orWhere('nomCherch', 'like', '%' . $query . '%');
-                             });
+                             ->orWhere('doi', 'like', '%' . $query . '%');
+
+                // Recherche dans la publication (titre et éditeur)
+                $queryBuilder->orWhereHas('publication', function ($pubQuery) use ($query) {
+                    $pubQuery->where('titrePub', 'like', '%' . $query . '%')
+                        ->orWhere('editeurPub', 'like', '%' . $query . '%');
+                });
+
+                // Recherche par chercheur (nom + prénom)
+                $queryBuilder->orWhereHas('chercheurs', function ($chercheurQuery) use ($query) {
+                    $chercheurQuery->whereRaw("LOWER(CONCAT(TRIM(prenomCherch), ' ', TRIM(nomCherch))) LIKE LOWER(?)", ['%' . trim($query) . '%'])
+                        ->orWhereRaw("LOWER(CONCAT(TRIM(nomCherch), ' ', TRIM(prenomCherch))) LIKE LOWER(?)", ['%' . trim($query) . '%'])
+                        ->orWhere('prenomCherch', 'like', '%' . $query . '%')
+                        ->orWhere('nomCherch', 'like', '%' . $query . '%');
+                });
+
+                // Recherche par doctorant (nom + prénom)
+                $queryBuilder->orWhereHas('doctorants', function ($doctorantQuery) use ($query) {
+                    $doctorantQuery->whereRaw("LOWER(CONCAT(TRIM(prenomDoc), ' ', TRIM(nomDoc))) LIKE LOWER(?)", ['%' . trim($query) . '%'])
+                        ->orWhereRaw("LOWER(CONCAT(TRIM(nomDoc), ' ', TRIM(prenomDoc))) LIKE LOWER(?)", ['%' . trim($query) . '%'])
+                        ->orWhere('prenomDoc', 'like', '%' . $query . '%')
+                        ->orWhere('nomDoc', 'like', '%' . $query . '%');
+                });
             });
         }
 
-        // Filtrer par année de publication dans la table pivot 'article_revue'
+        // Filtrer par année de publication
         if ($annee && $annee !== 'Tous') {
-            $articlesQuery->whereHas('revues', function ($queryBuilder) use ($annee) {
-                $queryBuilder->whereRaw('YEAR(article_revue.datePubArt) = ?', [$annee]);
-            });
+            $articlesQuery->whereYear('datePubArt', $annee);
         }
 
         // Pagination des résultats
-        $articles = $articlesQuery->paginate(12);
+        $articles = $articlesQuery->orderBy('created_at', 'desc')->paginate(12);
 
-        // Récupérer les années de publication distinctes depuis la table pivot 'article_revue'
-        $annees = DB::table('article_revue')
+        // Conserver les paramètres de filtre dans la pagination
+        $articles->appends([
+            'query' => $query,
+            'annee' => $annee
+        ]);
+
+        // Récupérer les années de publication distinctes
+        $annees = DB::table('articles')
                     ->selectRaw('YEAR(datePubArt) as year')
                     ->distinct()
+                    ->whereNotNull('datePubArt')
                     ->orderBy('year', 'desc')
                     ->pluck('year');
 
-        // Récupérer toutes les revues pour le filtre
-        $revues = Revue::all();
-        $chercheurs = Chercheur::all();
+        // Récupérer toutes les données nécessaires pour les filtres et l'affichage
+        $publications = Publication::orderBy('titrePub', 'asc')->get();
+        $chercheurs = Chercheur::orderBy('nomCherch', 'asc')
+                    ->orderBy('prenomCherch', 'asc')
+                    ->get();
+        $doctorants = Doctorant::orderBy('nomDoc', 'asc')
+                    ->orderBy('prenomDoc', 'asc')
+                    ->get();
+        $typeArticles = TypeArticle::orderBy('nomTypeArticle', 'asc')->get();
+
+        // Variables pour les filtres actifs
+        $typeArticleId = null;
+        $typeAuteur = null;
 
         // Retourner la vue avec toutes les données nécessaires
-        return view('lab.chercheur.index', compact('articles', 'annees', 'revues', 'query', 'annee', 'chercheurs'));
+        return view('lab.chercheur.liste_article', compact(
+            'articles',
+            'annees',
+            'publications',
+            'typeArticles',
+            'chercheurs',
+            'doctorants',
+            'query',
+            'annee',
+            'typeArticleId',
+            'typeAuteur'
+        ));
     }
 
 
@@ -323,8 +568,8 @@ class chercheurController extends Controller
 
         // Filtrer par année de publication dans la table pivot 'article_revue'
         if ($annee && $annee !== 'Tous') {
-            $articlesQuery->whereHas('revues', function ($queryBuilder) use ($annee) {
-                $queryBuilder->whereRaw('YEAR(article_revue.datePubArt) = ?', [$annee]);
+            $articlesQuery->whereHas('publication', function ($queryBuilder) use ($annee) {
+                $queryBuilder->whereRaw('YEAR(articles.datePubArt) = ?', [$annee]);
             });
         }
 
@@ -333,8 +578,8 @@ class chercheurController extends Controller
             $articlesQuery->where(function ($queryBuilder) use ($query) {
                 $queryBuilder->where('titreArticle', 'like', '%' . $query . '%')
                             ->orWhere('resumeArticle', 'like', '%' . $query . '%')
-                            ->orWhereHas('revues', function ($revueQuery) use ($query) {
-                                $revueQuery->where('nomRevue', 'like', '%' . $query . '%');
+                            ->orWhereHas('publication', function ($pubQuery) use ($query) {
+                                $pubQuery->where('titrePub', 'like', '%' . $query . '%');
                             });
             });
         }
@@ -343,47 +588,51 @@ class chercheurController extends Controller
         $articles = $articlesQuery->paginate(12);
 
         // Récupérer les années de publication distinctes depuis la table pivot 'article_revue'
-        $annees = DB::table('article_revue')
+        $annees = DB::table('articles')
                     ->selectRaw('YEAR(datePubArt) as year')
                     ->distinct()
                     ->orderBy('year', 'desc')
                     ->pluck('year');
 
-        // Récupérer toutes les revues pour le filtre
-        $revues = Revue::all();
+        // Récupérer toutes les publications pour le filtre
+        $publications = Publication::all();
         $chercheurs = Chercheur::all();
 
 
         // Retourner la vue avec toutes les données nécessaires
-        return view('lab.chercheur.index', compact('articles', 'annees', 'revues', 'query', 'annee', 'chercheurs'));
+        return view('lab.chercheur.liste_article', compact('articles', 'annees', 'publications', 'query', 'annee', 'chercheurs'));
     }
 
 
     public function supprimerArticle($id)
     {
-        DB::beginTransaction();
-
         try {
-            // Récupérer l'article à supprimer
+            // Récupérer l'article
             $article = Article::findOrFail($id);
 
-            // Supprimer les relations avant de supprimer l'article
-            $article->revues()->detach(); // Détacher les revues associées
-            $article->chercheurs()->detach(); // Détacher les chercheurs associés
-            $article->doctorants()->detach(); // Détacher les doctorants associés
+            DB::beginTransaction();
+
+            // Supprimer les relations dans la table pivot doctorant_article_chercheur
+            DB::table('doctorant_article_chercheur')
+                ->where('idArticle', $article->idArticle)
+                ->delete();
+
+            // Détacher les chercheurs et doctorants
+            $article->chercheurs()->detach();
+            $article->doctorants()->detach();
 
             // Supprimer l'article
             $article->delete();
 
             DB::commit();
 
-            // Rediriger avec un message de succès
-            return redirect()->route('chercheur.espace')->with('success', 'Article supprimé avec succès.');
+            return redirect()->route('chercheur.listeArticles')
+                ->with('success', 'Article supprimé avec succès.');
+
         } catch (\Exception $e) {
             DB::rollBack();
-
-            // Rediriger avec un message d'erreur si quelque chose échoue
-            return redirect()->back()->with('error', 'Une erreur est survenue lors de la suppression de l\'article.');
+            return redirect()->back()
+                ->with('error', 'Erreur lors de la suppression de l\'article : ' . $e->getMessage());
         }
     }
 
@@ -391,118 +640,101 @@ class chercheurController extends Controller
 
     public function modifierProfil(Request $request)
     {
-        $chercheur = Chercheur ::find(Auth::user()->idCherch); // Récupérer le chercheur connecté
-
         // Validation des données
-        $request->validate([
+        $validated = $request->validate([
             'nomCherch' => 'required|string|max:255',
             'prenomCherch' => 'required|string|max:255',
-            'adresse' => 'nullable|string|max:255',
-            'telCherch' => 'nullable|string|max:20',
-            'emailCherch' => 'required|string|email|max:255|unique:chercheurs,emailCherch,' . $chercheur->idCherch . ',idCherch',
-            'current_password' => 'nullable|string|min:8',
-            'new_password' => 'nullable|string|min:8|confirmed',
+            'genreCherch' => 'nullable|in:M,F',
+            'matriculeCherch' => 'required|string|max:20',
+            'emploiCherch' => 'nullable|string|max:100',
+            'departementCherch' => 'nullable|string|max:100',
+            'fonctionAdministrativeCherch' => 'nullable|string|max:100',
+            'specialiteCherch' => 'nullable|string|max:100',
+            'emailCherch' => 'required|email|max:100|unique:chercheurs,emailCherch,'.auth()->user()->idCherch.',idCherch',
+            'telCherch' => 'nullable|string|max:15',
+            'current_password' => 'nullable|required_with:new_password',
+            'new_password' => 'nullable|min:8|confirmed',
         ]);
 
-        // Mise à jour des informations
-        $chercheur->nomCherch = $request->nomCherch;
-        $chercheur->prenomCherch = $request->prenomCherch;
-        $chercheur->adresse = $request->adresse;
-        $chercheur->telCherch = $request->telCherch;
-        $chercheur->emailCherch = $request->emailCherch;
+        DB::beginTransaction();
 
-        // Gestion du mot de passe
-        if ($request->filled('new_password')) {
-            if ($request->filled('current_password') && Hash::check($request->current_password, $chercheur->password)) {
-                $chercheur->password = Hash::make($request->new_password);
-            } else {
-                return redirect()->back()->with('error', 'Le mot de passe actuel est incorrect.');
+        try {
+            $chercheur = auth()->user();
+
+            // Mise à jour des informations de base
+            $updateData = collect($validated)->except(['current_password', 'new_password'])->toArray();
+
+            // Gestion du mot de passe
+            if ($request->filled('current_password')) {
+                if (!Hash::check($request->current_password, $chercheur->password)) {
+                    return redirect()->route('chercheur.profil')
+                        ->withInput()
+                        ->with('error', 'Le mot de passe actuel est incorrect.');
+                }
+
+                if ($request->filled('new_password')) {
+                    $updateData['password'] = Hash::make($request->new_password);
+                }
             }
+
+            // Utilisation de la méthode update pour éviter l'erreur
+            $chercheur->update($updateData);
+
+            DB::commit();
+            return redirect()->route('chercheur.profil')
+                ->with('success', 'Profil mis à jour avec succès.');
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return redirect()->route('chercheur.profil')
+                ->withInput()
+                ->with('error', 'Erreur lors de la mise à jour du profil : ' . $e->getMessage());
         }
-
-        // Sauvegarde
-        $chercheur->save();
-
-        return redirect()->back()->with('success', 'Profil mis à jour avec succès.');
     }
 
 
 
 
     public function profil(){
-        return view('lab.chercheur.profil');
+        $chercheurConnecter = Auth::user();
+        $chercheur = Chercheur::findOrFail($chercheurConnecter->idCherch);
+        return view('lab.chercheur.profil' , compact('chercheur'));
+    }
+
+
+    public function listeArticle()
+    {
+        try {
+            // Récupérer le chercheur connecté
+            $chercheur = Auth::user();
+
+            // Récupérer les articles du chercheur avec leurs relations
+            $articles = Article::with(['publication', 'typeArticle'])
+                ->whereHas('chercheurs', function($query) use ($chercheur) {
+                    $query->where('idCherch', $chercheur->idCherch);
+                })
+                ->orderBy('datePubArt', 'desc')
+                ->get();
+
+            // Récupérer les publications correspondantes avec leurs articles
+            $publications = Publication::whereHas('articles', function($query) use ($chercheur) {
+                $query->whereHas('chercheurs', function($q) use ($chercheur) {
+                    $q->where('idCherch', $chercheur->idCherch);
+                });
+            })
+            ->with(['articles' => function($query) {
+                $query->orderBy('datePubArt', 'desc');
+            }])
+            ->get();
+
+            // Récupérer les types d'articles pour le filtre
+            $typeArticles = TypeArticle::all();
+
+            return view('lab.chercheur.liste_article', compact('articles', 'publications', 'typeArticles'));
+
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'Une erreur est survenue : ' . $e->getMessage());
+        }
     }
 }
 
-/*
-
-public function enregistrerArticle(Request $request)
-{
-    // Valider les données du formulaire
-    $validatedData = $request->validate([
-        'titre' => 'required|string|max:255',
-        'description' => 'required|string',
-        'articles' => 'required|array|min:1', // Au moins une revue doit être associée
-        'articles.*' => 'required|integer|exists:revues,idRevue', // Chaque ID de revue doit exister
-        'specific_info' => 'required|array', // Informations spécifiques pour chaque revue
-        'specific_info.*.PageDebut' => 'required|integer|min:1',
-        'specific_info.*.PageFin' => 'required|integer|gte:specific_info.*.PageDebut', // Page de fin >= page de début
-        'specific_info.*.DatePublication' => 'required|date',
-        'specific_info.*.Volume' => 'nullable|integer|min:1',
-        'specific_info.*.Numero' => 'nullable|integer|min:1',
-    ], [
-        'titre.required' => 'Le titre de l\'article est requis.',
-        'titre.max' => 'Le titre ne doit pas dépasser 255 caractères.',
-        'description.required' => 'La description de l\'article est requise.',
-        'articles.required' => 'Au moins une revue doit être sélectionnée.',
-        'articles.*.exists' => 'Une des revues sélectionnées est invalide.',
-        'specific_info.*.PageDebut.required' => 'La page de début est obligatoire.',
-        'specific_info.*.PageFin.gte' => 'La page de fin doit être supérieure ou égale à la page de début.',
-        'specific_info.*.DatePublication.required' => 'La date de publication est obligatoire.',
-    ]);
-
-    // Créer un nouvel article
-    $article = Article::create([
-        'titreArticle' => $validatedData['titre'],
-        'resumeArticle' => $validatedData['description'],
-    ]);
-
-    // Attacher l'article au chercheur connecté
-    $chercheurId = Auth::guard('chercheur')->id(); // ID du chercheur actuellement connecté
-    if (!$chercheurId) {
-        return redirect()->back()->with('error', 'Impossible de trouver l\'utilisateur connecté.');
-    }
-
-    // Insérer dans la table pivot chercheur_article
-    DB::table('chercheur_article')->insert([
-        'idCherch' => $chercheurId,
-        'idArticle' => $article->idArticle,
-    ]);
-
-    // Traiter les revues associées
-    $revues = $validatedData['articles']; // Liste des IDs des revues
-    $specificInfos = $validatedData['specific_info']; // Détails spécifiques pour chaque revue
-
-    foreach ($revues as $index => $revueId) {
-        $specificInfo = $specificInfos[$index];
-
-        // Ajouter les informations spécifiques dans la table pivot article_revue
-        DB::table('article_revue')->insert([
-            'idArticle' => $article->idArticle,
-            'idRevue' => $revueId,
-            'datePubArt' => $specificInfo['DatePublication'],
-            'pageDebut' => $specificInfo['PageDebut'],
-            'pageFin' => $specificInfo['PageFin'],
-            'volume' => $specificInfo['Volume'] ?? null,
-            'numero' => $specificInfo['Numero'] ?? null,
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
-    }
-
-    // Rediriger avec un message de succès
-    return redirect()->route('chercheur.publierArticle')->with('success', 'Article publié avec succès !');
-}
-
-
-*/

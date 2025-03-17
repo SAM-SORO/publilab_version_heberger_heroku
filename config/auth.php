@@ -43,9 +43,9 @@ return [
             'provider' => 'users',
         ],
 
-        'visiteur' => [
+        'doctorant' => [
             'driver' => 'session',
-            'provider' => 'visiteurs',
+            'provider' => 'doctorants',
         ],
 
         'admin' => [
@@ -90,9 +90,9 @@ return [
         ],
 
 
-        'visiteurs' => [
+        'doctorants' => [
             'driver' => 'eloquent',
-            'model' => App\Models\Visiteur::class,
+            'model' => App\Models\Doctorant::class,
         ],
 
         'chercheurs' => [
@@ -134,8 +134,8 @@ return [
     //     ],
     // ],
 
-    'visiteurs' => [
-        'provider' => 'visiteurs',
+    'doctorants' => [
+        'provider' => 'doctorants',
         'table' => 'password_reset_tokens',
         'expire' => 60,
     ],

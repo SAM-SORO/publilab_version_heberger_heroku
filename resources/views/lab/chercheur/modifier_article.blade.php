@@ -1,211 +1,296 @@
 @extends('baseChercheur')
 
 @section('content')
+<div class="container mt-4">
+    @include('lab.partials.alerts')
 
-<div class=" container-sm mb- bg-white shadow-sm mt-5 mb-5 py-5 px-5" style="max-width: 90%">
-    <!-- Bouton Retour -->
-    <div class="d-flex justify-content-between align-items-center mb-5">
-        <!-- Bouton Retour -->
-        <a href="{{ route('chercheur.espace') }}" class="btn btn-outline-secondary mb-4">
-            <i class="fa fa-arrow-left"></i> Retour
-        </a>
+    <div class="card shadow-sm">
+        <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+            <h5 class="mb-0"><i class="fas fa-edit"></i> Modifier l'article</h5>
+            <a href="{{ route('chercheur.listeArticles') }}" class="btn btn-outline-light btn-sm">
+                <i class="fas fa-arrow-left mr-1"></i> Retour
+            </a>
+        </div>
+        <div class="card-body">
+            <form action="{{ route('chercheur.updateArticle', $article->idArticle) }}" method="POST">
+                @csrf
 
-        <!-- Titre centré, en utilisant flex-grow pour occuper tout l'espace restant -->
-        <h2 class="mb-4 flex-grow-1 text-center">Modifier un article </h2>
+                <!-- Informations de base -->
+                <div class="card mb-4">
+                    <div class="card-header bg-light">
+                        <h6 class="mb-0">Informations de base</h6>
+                    </div>
+                    <div class="card-body">
+                        <!-- Titre -->
+                        <div class="form-group">
+                            <label for="titreArticle">Titre <span class="text-danger">*</span></label>
+                            <input type="text" name="titreArticle" id="titreArticle"
+                                   class="form-control @error('titreArticle') is-invalid @enderror"
+                                   value="{{ old('titreArticle', $article->titreArticle) }}" required>
+                            @error('titreArticle')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+
+                        <!-- Type d'article -->
+                        <div class="form-group">
+                            <label for="idTypeArticle">Type d'article</label>
+                            <select name="idTypeArticle" id="idTypeArticle" class="form-control">
+                                <option value="">Sélectionner un type</option>
+                                @foreach($typeArticles as $type)
+                                    <option value="{{ $type->idTypeArticle }}"
+                                        {{ old('idTypeArticle', $article->idTypeArticle) == $type->idTypeArticle ? 'selected' : '' }}>
+                                        {{ $type->nomTypeArticle }}
+                                    </option>
+                                @endforeach
+                            </select>
+                            @error('idTypeArticle')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+
+                        <!-- Co-auteurs chercheurs -->
+                        <div class="form-group">
+                            <label for="chercheurs">Co-auteurs chercheurs</label>
+                            <select name="chercheurs[]" id="chercheurs" class="form-control" multiple>
+                                @foreach($chercheurs as $chercheur)
+                                    <option value="{{ $chercheur->idCherch }}"
+                                        {{ in_array($chercheur->idCherch, $chercheurIds) ? 'selected' : '' }}>
+                                        {{ $chercheur->prenomCherch }} {{ $chercheur->nomCherch }}
+                                    </option>
+                                @endforeach
+                            </select>
+                            @error('chercheurs')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+
+                        <!-- Co-auteurs doctorants -->
+                        <div class="form-group">
+                            <label for="doctorants">doctorants</label>
+                            <select name="doctorants[]" id="doctorants" class="form-control" multiple>
+                                @foreach($doctorants as $doctorant)
+                                    <option value="{{ $doctorant->idDoc }}"
+                                        {{ in_array($doctorant->idDoc, $doctorantIds) ? 'selected' : '' }}>
+                                        {{ $doctorant->prenomDoc }} {{ $doctorant->nomDoc }}
+                                    </option>
+                                @endforeach
+                            </select>
+                            @error('doctorants')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+
+                        <!-- Résumé -->
+                        <div class="form-group">
+                            <label for="resumeArticle">Résumé</label>
+                            <textarea name="resumeArticle" id="resumeArticle" class="form-control @error('resumeArticle') is-invalid @enderror"
+                                      rows="4">{{ old('resumeArticle', $article->resumeArticle) }}</textarea>
+                            @error('resumeArticle')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Informations de publication -->
+                <div class="card mb-4">
+                    <div class="card-header bg-light">
+                        <h6 class="mb-0">Informations de publication</h6>
+                    </div>
+                    <div class="card-body">
+                        <!-- Publication -->
+                        <div class="form-group">
+                            <label for="idPub">Publication</label>
+                            <select name="idPub" id="idPub" class="form-control">
+                                <option value="">Sélectionner une publication</option>
+                                @foreach($publications as $publication)
+                                    <option value="{{ $publication->idPub }}"
+                                        {{ old('idPub', $article->idPub) == $publication->idPub ? 'selected' : '' }}>
+                                        {{ $publication->titrePub }}
+                                    </option>
+                                @endforeach
+                            </select>
+                            @error('idPub')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+
+                        <div class="row">
+                            <!-- Date de publication -->
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="datePubArt">Date de publication</label>
+                                    <input type="date" name="datePubArt" id="datePubArt"
+                                           class="form-control @error('datePubArt') is-invalid @enderror"
+                                           value="{{ old('datePubArt', $article->datePubArt ? date('Y-m-d', strtotime($article->datePubArt)) : '') }}">
+                                    @error('datePubArt')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                </div>
+                            </div>
+
+                            <!-- Volume -->
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="volume">Volume</label>
+                                    <input type="number" name="volume" id="volume"
+                                           class="form-control @error('volume') is-invalid @enderror"
+                                           value="{{ old('volume', $article->volume) }}">
+                                    @error('volume')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <!-- Numéro -->
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label for="numero">Numéro</label>
+                                    <input type="number" name="numero" id="numero"
+                                           class="form-control @error('numero') is-invalid @enderror"
+                                           value="{{ old('numero', $article->numero) }}">
+                                    @error('numero')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                </div>
+                            </div>
+
+                            <!-- Page début -->
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label for="pageDebut">Page début</label>
+                                    <input type="number" name="pageDebut" id="pageDebut"
+                                           class="form-control @error('pageDebut') is-invalid @enderror"
+                                           value="{{ old('pageDebut', $article->pageDebut) }}">
+                                    @error('pageDebut')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                </div>
+                            </div>
+
+                            <!-- Page fin -->
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label for="pageFin">Page fin</label>
+                                    <input type="number" name="pageFin" id="pageFin"
+                                           class="form-control @error('pageFin') is-invalid @enderror"
+                                           value="{{ old('pageFin', $article->pageFin) }}">
+                                    @error('pageFin')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Informations complémentaires -->
+                <div class="card mb-4">
+                    <div class="card-header bg-light">
+                        <h6 class="mb-0">Informations complémentaires</h6>
+                    </div>
+                    <div class="card-body">
+                        <!-- DOI -->
+                        <div class="form-group">
+                            <label for="doi">DOI</label>
+                            <input type="text" name="doi" id="doi"
+                                   class="form-control @error('doi') is-invalid @enderror"
+                                   value="{{ old('doi', $article->doi) }}">
+                            @error('doi')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+
+                        <!-- Lien -->
+                        <div class="form-group">
+                            <label for="lienArticle">Lien de l'article</label>
+                            <input type="url" name="lienArticle" id="lienArticle"
+                                   class="form-control @error('lienArticle') is-invalid @enderror"
+                                   value="{{ old('lienArticle', $article->lienArticle) }}">
+                            @error('lienArticle')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Bouton d'action -->
+                <div class="text-center">
+                    <button type="submit" class="btn btn-primary btn-lg px-5">
+                        <i class="fas fa-save mr-2"></i> Enregistrer les modifications
+                    </button>
+                </div>
+            </form>
+        </div>
     </div>
-
-
-    <div class=" mb-5">
-        {{-- Erreur session --}}
-        @if (Session::has('error'))
-            <div class="alert alert-danger alert-dismissible fade show mx-auto" role="alert" id="alert-danger-login">
-                {{ Session::get('error') }}
-                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
-            </div>
-        @endif
-
-        {{-- Succès session --}}
-        @if (Session::has('success'))
-            <div class="alert alert-success alert-dismissible fade show" role="alert" id="alert-success-login">
-                {{ Session::get('success') }}
-                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
-            </div>
-        @endif
-
-        {{-- Erreurs de validation --}}
-        @if ($errors->any())
-            <div class="alert alert-danger alert-dismissible fade show mx-auto" role="alert" id="alert-validation-errors">
-                <ul class="list-unstyled mb-0">
-                    @foreach ($errors->all() as $error)
-                        <li>{{ $error }}</li>
-                    @endforeach
-                </ul>
-                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
-            </div>
-        @endif
-    </div>
-
-
-
-    <form action="{{ route('chercheur.updateArticle', $article->idArticle) }}" method="POST">
-        @csrf
-        @method('POST')
-
-        <!-- Titre de l'article -->
-        <div class="form-group mb-3">
-            <label for="titreArticle">Titre de l'article <span class="text-danger">*</span></label>
-            <input type="text" class="form-control @error('titreArticle') is-invalid @enderror"
-                id="titreArticle" name="titreArticle" value="{{ old('titreArticle', $article->titreArticle) }}" required>
-            @error('titreArticle')
-                <span class="invalid-feedback">{{ $message }}</span>
-            @enderror
-        </div>
-
-        <!-- Résumé -->
-        <div class="form-group mb-3">
-            <label for="resumeArticle">Résumé</label>
-            <textarea class="form-control @error('resumeArticle') is-invalid @enderror"
-                    id="resumeArticle" name="resumeArticle" rows="3">{{ old('resumeArticle', $article->resumeArticle) }}</textarea>
-            @error('resumeArticle')
-                <span class="invalid-feedback">{{ $message }}</span>
-            @enderror
-        </div>
-
-        <!-- DOI -->
-        <div class="form-group mb-3">
-            <label for="doi">DOI</label>
-            <input type="text" class="form-control @error('doi') is-invalid @enderror"
-                id="doi" name="doi" value="{{ old('doi', $article->doi) }}">
-            @error('doi')
-                <span class="invalid-feedback">{{ $message }}</span>
-            @enderror
-        </div>
-
-        <!-- Chercheurs contributeurs -->
-        <div class="form-group mb-3">
-            <label for="chercheurs">Chercheurs</label>
-            <select class="form-control @error('chercheurs') is-invalid @enderror"
-                    id="chercheurs" name="chercheurs[]" multiple>
-                @foreach ($chercheurs as $chercheur)
-                    <option value="{{ $chercheur->idCherch }}"
-                        {{ in_array($chercheur->idCherch, old('chercheurs', $article->chercheurs->pluck('idCherch')->toArray())) ? 'selected' : '' }}>
-                        {{ $chercheur->prenomCherch }} {{ $chercheur->nomCherch }}
-                    </option>
-                @endforeach
-            </select>
-            @error('chercheurs')
-                <span class="invalid-feedback">{{ $message }}</span>
-            @enderror
-        </div>
-
-        <!-- Revue -->
-        <div class="form-group mb-3">
-            <label for="revue">Revue</label>
-            <select class="form-control @error('revue') is-invalid @enderror" id="revue" name="revue" multiple>
-                @foreach ($revues as $revue)
-                    <option value="{{ $revue->idRevue }}"
-                        {{ old('revue', $article->revues->first() ? $article->revues->first()->idRevue : '') == $revue->idRevue ? 'selected' : '' }}>
-                        {{ $revue->nomRevue }}
-                    </option>
-                @endforeach
-            </select>
-            @error('revue')
-                <span class="invalid-feedback">{{ $message }}</span>
-            @enderror
-        </div>
-
-        <!-- Date de publication -->
-        <div class="form-group mb-4">
-            <label for="datePubArt">Date de publication</label>
-            <input type="date" class="form-control @error('datePubArt') is-invalid @enderror"
-                   id="datePubArt" name="datePubArt" value="{{ old('datePubArt', $article->revues->first()->pivot->datePubArt ?? '') }}">
-            @error('datePubArt')
-                <span class="text-danger">{{ $message }}</span>
-            @enderror
-        </div>
-
-        <!-- Volume -->
-        <div class="form-group mb-3">
-            <label for="volume">Volume</label>
-            <input type="number" class="form-control @error('volume') is-invalid @enderror"
-                id="volume" name="volume" value="{{ old('volume', $article->revues->first() ? $article->revues->first()->pivot->volume : '') }}">
-            @error('volume')
-                <span class="invalid-feedback">{{ $message }}</span>
-            @enderror
-        </div>
-
-        <!-- Numéro -->
-        <div class="form-group mb-3">
-            <label for="numero">Numéro</label>
-            <input type="number" class="form-control @error('numero') is-invalid @enderror"
-                id="numero" name="numero" value="{{ old('numero', $article->revues->first() ? $article->revues->first()->pivot->numero : '') }}">
-            @error('numero')
-                <span class="invalid-feedback">{{ $message }}</span>
-            @enderror
-        </div>
-
-        <!-- Pages -->
-        <div class="form-group mb-3">
-            <label for="pageDebut">Page de début</label>
-            <input type="number" class="form-control @error('pageDebut') is-invalid @enderror"
-                id="pageDebut" name="pageDebut" value="{{ old('pageDebut', $article->revues->first() ? $article->revues->first()->pivot->pageDebut : '') }}">
-            @error('pageDebut')
-                <span class="invalid-feedback">{{ $message }}</span>
-            @enderror
-        </div>
-
-        <div class="form-group mb-3">
-            <label for="pageFin">Page de fin</label>
-            <input type="number" class="form-control @error('pageFin') is-invalid @enderror"
-                id="pageFin" name="pageFin" value="{{ old('pageFin', $article->revues->first() ? $article->revues->first()->pivot->pageFin : '') }}">
-            @error('pageFin')
-                <span class="invalid-feedback">{{ $message }}</span>
-            @enderror
-        </div>
-
-        <!-- Soumettre -->
-        <button type="submit" class="btn btn-primary">Mettre à jour</button>
-    </form>
-
-
 </div>
-
+@endsection
 
 @section('scripts')
 <script>
     $(document).ready(function() {
-        // Initialisation de Select2 pour chercheurs
+        // Initialisation de Select2 pour les sélecteurs multiples
         $('#chercheurs').select2({
-            placeholder: 'Sélectionnez les chercheurs',
+            width: '100%',
+            placeholder: 'Sélectionner des chercheurs...',
             allowClear: true,
-            width: '100%'
+            language: {
+                noResults: function() {
+                    return "Aucun chercheur trouvé";
+                },
+                searching: function() {
+                    return "Recherche...";
+                }
+            }
         });
 
-        // Initialisation de Select2 pour revue
-        $('#revue').select2({
+        $('#doctorants').select2({
+            width: '100%',
+            placeholder: 'Sélectionner des doctorants...',
             allowClear: true,
-            maximumSelectionLength: 1,
-            width: '100%'
+            language: {
+                noResults: function() {
+                    return "Aucun doctorant trouvé";
+                },
+                searching: function() {
+                    return "Recherche...";
+                }
+            }
         });
 
-        // Activation/Désactivation des champs dépendants de la revue
-        $('#revue').on('change', function() {
-            const revueSelected = $(this).val();
-            $('#volume, #numero, #pageDebut, #pageFin').prop('disabled', !revueSelected);
+        $('#idTypeArticle').select2({
+            width: '100%',
+            placeholder: 'Sélectionner un type...',
+            allowClear: true,
+            language: {
+                noResults: function() {
+                    return "Aucun type trouvé";
+                },
+                searching: function() {
+                    return "Recherche...";
+                }
+            }
         });
 
-        // Initialisation de l'état des champs
-        const revueSelected = $('#revue').val();
-        $('#volume, #numero ,#pageDebut, #pageFin').prop('disabled', !revueSelected);
+        $('#idPub').select2({
+            width: '100%',
+            placeholder: 'Sélectionner une publication...',
+            allowClear: true,
+            language: {
+                noResults: function() {
+                    return "Aucune publication trouvée";
+                },
+                searching: function() {
+                    return "Recherche...";
+                }
+            }
+        });
+
+        // Ajuster la hauteur des sélecteurs Select2
+        $('.select2-selection').css('min-height', '40px');
     });
-
 </script>
-@endsection
-
 @endsection

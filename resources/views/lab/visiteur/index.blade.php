@@ -32,23 +32,72 @@
 
 <div style="margin-bottom: 130px;"></div>
 
-<section class="container-fluid mt-5 mb-5 bg-white">
+<!-- Section des articles récents -->
+<section class="py-5 bg-white">
     <div class="container">
-        <h3 class="row justify-content-center pt-5 pb-5">Articles publiés récemment</h3>
-        <div class="row justify-content-center">
-            @foreach($articles as $article)
-                <div class="col-md-6 mb-4 d-flex justify-content-center">
-                    <div class="card bg-white" style="width: 600px; height: 400px;">
-                        <div class="card-body d-flex flex-column">
-                            <h5 class="card-title">{{ $article->titreArticle }}</h5>
-                            <p class="card-text">{{ Str::limit($article->resumeArticle, 50) }}</p>
-                            <a href="{{ route('visiteur.article', $article->idArticle) }}" class="btn btn-primary mt-auto">Lire la suite</a>
-                            {{-- {{ route('visiteur.article.show', $article->idArticle) }} --}}
+        <h2 class="text-center mb-4">Publications récentes</h2>
+
+        @if($articles->isEmpty())
+            <div class="alert alert-info text-center">
+                Aucune publication récente disponible.
+            </div>
+        @else
+
+            <div class="row">
+                @foreach($articles as $article)
+                    <div class="col-md-6 mb-4">
+                        <div class="card h-100 w-100 shadow-sm bg-white">
+                            <div class="card-body">
+                                <h5 class="card-title">{{ $article->titreArticle }}</h5>
+                                <p class="card-text text-muted mb-2">
+                                    <!-- Auteurs -->
+                                    <small>
+                                        @foreach($article->chercheurs as $chercheur)
+                                            {{ $chercheur->prenomCherch }} {{ strtoupper($chercheur->nomCherch) }}@if(!$loop->last),@endif
+                                        @endforeach
+
+                                        @if($article->chercheurs->isNotEmpty() && $article->doctorants->isNotEmpty())
+                                            ,
+                                        @endif
+
+                                        @foreach($article->doctorants as $doctorant)
+                                            {{ $doctorant->prenomDoc }} {{ strtoupper($doctorant->nomDoc) }}@if(!$loop->last),@endif
+                                        @endforeach
+                                    </small>
+                                </p>
+
+                                <!-- Publication -->
+                                @if($article->publication)
+                                    <p class="card-text">
+                                        <em>{{ $article->publication->titrePub }}</em>
+                                        @if($article->datePubArt)
+                                            <br><small>{{ \Carbon\Carbon::parse($article->datePubArt)->format('d M Y') }}</small>
+                                        @endif
+                                    </p>
+                                @endif
+
+                                <!-- Résumé (si disponible) -->
+                                @if($article->resumeArticle)
+                                    <p class="card-text">
+                                        {{ Str::limit($article->resumeArticle, 150) }}
+                                    </p>
+                                @endif
+                            </div>
+                            <div class="card-footer bg-white border-top-0">
+                                @if($article->lienArticle)
+                                    <a href="{{ $article->lienArticle }}" target="_blank" class="btn btn-sm btn-outline-primary">
+                                        <i class="fas fa-external-link-alt"></i> Lire l'article
+                                    </a>
+                                @endif
+                                <a href="{{ route('visiteur.article') }}" class="btn btn-sm btn-link btn-light text-muted">
+                                    Voir plus d'articles
+                                </a>
+                            </div>
                         </div>
                     </div>
-                </div>
-            @endforeach
-        </div>
+                @endforeach
+            </div>
+        @endif
     </div>
 </section>
 

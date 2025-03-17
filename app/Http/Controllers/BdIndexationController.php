@@ -79,27 +79,17 @@ class BdIndexationController extends Controller
         DB::beginTransaction();
 
         try {
-            // Récupérer la base d'indexation à supprimer
             $bdIndexation = BdIndexation::findOrFail($id);
-
-            // Dissocier les revues associées
             $bdIndexation->revues()->detach();
-
-            // Supprimer la base d'indexation
             $bdIndexation->delete();
 
-            // Commit de la transaction
             DB::commit();
-
-            // Rediriger avec un message de succès
             return redirect()->route('admin.listeBaseIndexation')
-                             ->with('success', 'Base d\'indexation supprimée avec succès.');
+                ->with('success', 'Base d\'indexation supprimée avec succès.');
         } catch (\Exception $e) {
             DB::rollBack();
-
-            // Rediriger avec un message d'erreur
             return redirect()->route('admin.listeBaseIndexation')
-                             ->with('error', 'Une erreur est survenue lors de la suppression de la base d\'indexation. Détails: ' . $e->getMessage());
+                ->with('error', 'Une erreur est survenue : ' . $e->getMessage());
         }
     }
 
