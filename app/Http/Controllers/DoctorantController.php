@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Doctorant;
 use App\Models\Article;
-use App\Models\Revue;
+use App\Models\UMRI;
 use App\Models\Theme;
 use App\Models\TypeArticle;
 use App\Models\Chercheur;
@@ -17,6 +17,9 @@ use Illuminate\Support\Facades\Validator;
 
 class DoctorantController extends Controller
 {
+
+    //ce que le doctorant connecter peut faire
+
     public function index()
     {
         // Récupérer le doctorant connecté
@@ -332,33 +335,33 @@ class DoctorantController extends Controller
         }
     }
 
+
+
+    /// Ce que l'administrateur peut faire
+
     public function listeDoctorants()
     {
-        // Récupérer les doctorants avec leurs relations
-        $doctorants = Doctorant::with(['theme.axeRecherche', 'encadrants', 'articles'])
+        // Ajouter UMRI aux données récupérées
+        $doctorants = Doctorant::with(['theme.axeRecherche', 'encadrants', 'articles', 'umri'])
             ->orderByDesc('created_at')
             ->paginate(10);
 
-
-        // Récupérer uniquement les thèmes non attribués (etatAttribution = false)
         $themes = Theme::where('etatAttribution', false)->get();
-
-
-        // Récupérer les chercheurs pour le formulaire d'ajout
         $chercheurs = Chercheur::all();
+        $umris = UMRI::all(); // Ajouter la récupération des UMRI
 
-        return view('lab.admin.liste_doctorant', compact('doctorants', 'themes', 'chercheurs'));
+        return view('lab.admin.liste_doctorant', compact('doctorants', 'themes', 'chercheurs', 'umris'));
     }
 
     public function create(Request $request)
     {
-        // Validation des données
+        // Ajouter la validation pour UMRI
         $validated = $request->validate([
             'nomDoc' => 'required|string|max:255',
             'prenomDoc' => 'required|string|max:255',
             'matriculeDoc' => 'required|string|max:50|unique:doctorants,matriculeDoc',
             'password' => 'required|string|min:6|confirmed',
-            // Champs optionnels
+            'idUMRI' => 'required|exists:umris,idUMRI', // Ajout de la validation UMRI
             'genreDoc' => 'nullable|in:M,F',
             'emailDoc' => 'nullable|email|unique:doctorants,emailDoc',
             'telDoc' => 'nullable|string|max:20',
@@ -379,7 +382,7 @@ class DoctorantController extends Controller
         DB::beginTransaction();
 
         try {
-            // Créer le doctorant
+            // Créer le doctorant avec l'UMRI
             $doctorant = Doctorant::create([
                 'nomDoc' => $validated['nomDoc'],
                 'prenomDoc' => $validated['prenomDoc'],
@@ -388,7 +391,8 @@ class DoctorantController extends Controller
                 'emailDoc' => $validated['emailDoc'] ?? null,
                 'telDoc' => $validated['telDoc'] ?? null,
                 'password' => Hash::make($validated['password']),
-                'idTheme' => $validated['idTheme'] ?? null
+                'idTheme' => $validated['idTheme'] ?? null,
+                'idUMRI' => $validated['idUMRI'] // Ajout de l'UMRI
             ]);
 
             // Mettre à jour l'état d'attribution du thème si un thème est sélectionné
@@ -412,11 +416,56 @@ class DoctorantController extends Controller
 
         } catch (\Exception $e) {
             DB::rollBack();
+
+            // Récupérer les données nécessaires
+            $doctorants = Doctorant::with(['theme.axeRecherche', 'encadrants', 'articles', 'umri'])
+                ->orderByDesc('created_at')
+                ->paginate(10);
+            $themes = Theme::where('etatAttribution', false)->get();
+            $chercheurs = Chercheur::all();
+            $umris = UMRI::all();
+
             return redirect()->back()
                 ->withInput()
+                ->with(compact('doctorants', 'themes', 'chercheurs', 'umris'))
                 ->with('error', 'Erreur lors de la création : ' . $e->getMessage());
         }
     }
+
+    public function delete($id)
+    {
+        try {
+            $doctorant = Doctorant::findOrFail($id);
+
+            // Libérer le thème associé
+            if ($doctorant->idTheme) {
+                $theme = Theme::find($doctorant->idTheme);
+                if ($theme && !$theme->doctorants()->where('idDoc', '!=', $id)->exists()) {
+                    $theme->update(['etatAttribution' => false]);
+                }
+            }
+
+            // Supprimer le doctorant
+            $doctorant->delete();
+
+            // Récupérer les données nécessaires
+            $doctorants = Doctorant::with(['theme.axeRecherche', 'encadrants', 'articles', 'umri'])
+                ->orderByDesc('created_at')
+                ->paginate(10);
+            $themes = Theme::where('etatAttribution', false)->get();
+            $chercheurs = Chercheur::all();
+            $umris = UMRI::all();
+
+            return redirect()->route('admin.listeDoctorants')
+                ->with(compact('doctorants', 'themes', 'chercheurs', 'umris'))
+                ->with('success', 'Doctorant supprimé avec succès.');
+
+        } catch (\Exception $e) {
+            return redirect()->route('admin.listeDoctorants')
+                ->with('error', 'Erreur lors de la suppression : ' . $e->getMessage());
+        }
+    }
+
 
     public function search(Request $request)
     {
@@ -464,7 +513,7 @@ class DoctorantController extends Controller
                       });
                 }
             })
-            ->with(['theme.axeRecherche', 'encadrants', 'articles'])
+            ->with(['theme.axeRecherche', 'encadrants', 'articles', 'umri'])
             ->orderByDesc('created_at')
             ->paginate(10)
             ->withQueryString();
@@ -472,8 +521,9 @@ class DoctorantController extends Controller
             // Récupérer les données nécessaires pour le formulaire
             $themes = Theme::where('etatAttribution', false)->get();
             $chercheurs = Chercheur::all();
+            $umris = UMRI::all();
 
-            return view('lab.admin.liste_doctorant', compact('doctorants', 'themes', 'chercheurs', 'query'));
+            return view('lab.admin.liste_doctorant', compact('doctorants', 'themes', 'chercheurs', 'umris', 'query'));
 
         } catch (\Exception $e) {
             return redirect()->route('admin.listeDoctorants')
@@ -484,9 +534,10 @@ class DoctorantController extends Controller
     public function edit($id)
     {
         try {
-            $doctorant = Doctorant::with(['theme', 'encadrants', 'articles'])->findOrFail($id);
+            // Récupérer le doctorant avec toutes ses relations, y compris UMRI
+            $doctorant = Doctorant::with(['theme', 'encadrants', 'articles', 'umri'])->findOrFail($id);
 
-            // Récupérer les thèmes disponibles (non attribués ou attribués à ce doctorant)
+            // Récupérer les thèmes disponibles
             $themes = Theme::where('etatAttribution', false)
                 ->orWhere('idTheme', $doctorant->idTheme)
                 ->orWhereHas('doctorants', function($query) use ($id) {
@@ -497,10 +548,20 @@ class DoctorantController extends Controller
             // Récupérer tous les chercheurs
             $chercheurs = Chercheur::all();
 
+            // Récupérer toutes les UMRI
+            $umris = UMRI::all();
+
             // Récupérer les IDs des encadrants actuels
             $encadrantsIds = $doctorant->encadrants->pluck('idCherch')->toArray();
 
-            return view('lab.admin.modifier_doctorant', compact('doctorant', 'themes', 'chercheurs', 'encadrantsIds'));
+            return view('lab.admin.modifier_doctorant', compact(
+                'doctorant',
+                'themes',
+                'chercheurs',
+                'encadrantsIds',
+                'umris' // Ajout des UMRI dans les données envoyées à la vue
+            ));
+
         } catch (\Exception $e) {
             return redirect()->route('admin.listeDoctorants')
                 ->with('error', 'Doctorant non trouvé : ' . $e->getMessage());
@@ -509,11 +570,12 @@ class DoctorantController extends Controller
 
     public function update(Request $request, $id)
     {
-        // Règles de validation de base
+        // Ajouter la validation pour UMRI
         $rules = [
             'nomDoc' => 'required|string|max:255',
             'prenomDoc' => 'required|string|max:255',
             'matriculeDoc' => 'required|string|max:50|unique:doctorants,matriculeDoc,' . $id . ',idDoc',
+            'idUMRI' => 'required|exists:umris,idUMRI', // Ajout de la validation UMRI
             'genreDoc' => 'nullable|in:M,F',
             'emailDoc' => 'nullable|email|unique:doctorants,emailDoc,' . $id . ',idDoc',
             'telDoc' => 'nullable|string|max:20',
@@ -551,7 +613,8 @@ class DoctorantController extends Controller
                 'genreDoc' => $validated['genreDoc'] ?? null,
                 'emailDoc' => $validated['emailDoc'] ?? null,
                 'telDoc' => $validated['telDoc'] ?? null,
-                'idTheme' => $validated['idTheme'] ?? null
+                'idTheme' => $validated['idTheme'] ?? null,
+                'idUMRI' => $validated['idUMRI'] // Ajout de l'UMRI
             ];
 
             // Mettre à jour le mot de passe si fourni
@@ -589,13 +652,23 @@ class DoctorantController extends Controller
 
         } catch (\Exception $e) {
             DB::rollBack();
+
+            // Récupérer les données nécessaires
+            $doctorants = Doctorant::with(['theme.axeRecherche', 'encadrants', 'articles', 'umri'])
+                ->orderByDesc('created_at')
+                ->paginate(10);
+            $themes = Theme::where('etatAttribution', false)->get();
+            $chercheurs = Chercheur::all();
+            $umris = UMRI::all();
+
             return redirect()->back()
                 ->withInput()
+                ->with(compact('doctorants', 'themes', 'chercheurs', 'umris'))
                 ->with('error', 'Erreur lors de la modification : ' . $e->getMessage());
         }
     }
 
-    public function delete($idArticle)
+    public function deleteArticle($idArticle)
     {
         try {
             // Récupérer l'article
@@ -774,7 +847,7 @@ class DoctorantController extends Controller
         DB::beginTransaction();
 
         try {
-            $doctorant = auth()->guard('doctorant')->user();
+            $doctorant = Doctorant::findOrFail(auth()->guard('doctorant')->user()->idDoc);
 
             // Mise à jour des informations de base
             $updateData = collect($validated)->except(['current_password', 'new_password', 'new_password_confirmation'])->toArray();
@@ -793,7 +866,7 @@ class DoctorantController extends Controller
             }
 
             // Mise à jour des données
-            $doctorant->update($updateData);
+            $doctorant->fill($updateData)->save();
 
             DB::commit();
             return redirect()->route('doctorant.profil')

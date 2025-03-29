@@ -113,17 +113,26 @@ use Carbon\Carbon;
 
                             <!-- Thème de recherche -->
                             @if($doctorant->theme)
-                                <div class="mb-3">  
+                                <div class="mb-3">
                                     <p class="mb-1">
                                         <i class="fas fa-bookmark text-secondary"></i>
                                         <span class="font-weight-bold">Thème :</span>
                                         {{ $doctorant->theme->intituleTheme }}
-                                        
+
                                     </p>
                                 </div>
                             @endif
-                                
-                            
+
+                            <!-- Information UMRI -->
+                            @if($doctorant->umri)
+                                <div class="mb-3">
+                                    <p class="mb-1">
+                                        <i class="fas fa-university text-secondary"></i>
+                                        <span class="font-weight-bold">UMRI :</span>
+                                        <span class="badge badge-info">{{ $doctorant->umri->sigleUMRI }}</span>
+                                    </p>
+                                </div>
+                            @endif
 
                             <!-- Statistiques -->
                             <div class="mb-3">
@@ -285,6 +294,15 @@ use Carbon\Carbon;
                                         </div>
                                     </div>
                                 @endif
+
+                                <!-- UMRI -->
+                                @if($doctorant->umri)
+                                    <div class="mb-4">
+                                        <h6 class="font-weight-bold text-info mb-3">
+                                            <i class="fas fa-university"></i> UMRI : {{$doctorant->umri->sigleUMRI}}
+                                        </h6>
+                                    </div>
+                                @endif
                             </div>
                             <div class="modal-footer">
                                 <button type="button" class="btn btn-secondary" data-dismiss="modal">Fermer</button>
@@ -305,13 +323,14 @@ use Carbon\Carbon;
 <div class="modal fade" id="addDoctorantModal" tabindex="-1" role="dialog" aria-labelledby="addDoctorantModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg" role="document">
         <div class="modal-content">
-            <div class="modal-header bg-dark text-white">
+            <div class="modal-header">
                 <h5 class="modal-title" id="addDoctorantModalLabel">
                     <i class="fas fa-plus-circle"></i> Nouveau doctorant
                 </h5>
-                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                     <span aria-hidden="true">&times;</span>
                 </button>
+
             </div>
             <div class="modal-body">
                 <form action="{{ route('admin.enregistrerDoctorant') }}" method="POST">
@@ -466,6 +485,44 @@ use Carbon\Carbon;
                         </div>
                     </div>
 
+                    <!-- Dans le modal d'ajout de doctorant -->
+                    <div class="card shadow-sm mb-4">
+                        <div class="card-header bg-light">
+                            <h6 class="mb-0"><i class="fas fa-university"></i> Rattachement</h6>
+                        </div>
+                        <div class="card-body">
+                            <!-- Ajout du sélecteur UMRI -->
+                            <div class="form-group">
+                                <label for="idUMRI" class="font-weight-bold">UMRI <span class="text-danger">*</span></label>
+                                <select class="form-control select2 @error('idUMRI') is-invalid @enderror"
+                                        id="idUMRI" name="idUMRI" required multiple>
+                                    <option value="">Sélectionner une UMRI</option>
+                                    @foreach($umris as $umri)
+                                        <option value="{{ $umri->idUMRI }}">
+                                            {{ $umri->sigleUMRI }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                                @error('idUMRI')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
+
+                            <!-- Thème de recherche -->
+                            <div class="form-group">
+                                <label for="idTheme" class="font-weight-bold">Thème de recherche</label>
+                                <select class="form-control select2" id="idTheme" name="idTheme">
+                                    <option value="">Sélectionner un thème</option>
+                                    @foreach($themes as $theme)
+                                        <option value="{{ $theme->idTheme }}">
+                                            {{ $theme->intituleTheme }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="modal-footer bg-light">
 
                         <button type="submit" class="btn btn-primary">
@@ -490,6 +547,26 @@ use Carbon\Carbon;
 
         // Initialisation de Select2 pour tous les sélecteurs
         $('#idTheme').select2({
+            width: '100%',
+            placeholder: 'Sélectionner...',
+            allowClear: true,
+            maximumSelectionLength: 1,
+            language: {
+                noResults: function() {
+                    return "Aucune base trouvée";
+                },
+                searching: function() {
+                    return "Recherche...";
+                },
+                maximumSelectionLength: function() {
+                    return "Vous ne pouvez sélectionner qu'un seul élément";  // Message personnalisé en français
+                }
+            },
+        });
+
+
+        // Initialisation de Select2 pour tous les sélecteurs
+        $('#idUMRI').select2({
             width: '100%',
             placeholder: 'Sélectionner...',
             allowClear: true,

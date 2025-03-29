@@ -101,7 +101,7 @@
                             {{ $articles->total() }} article(s)
                         </span>
                         <span class="text-muted ml-2">
-                            @if(isset($query))
+                            @if(isset($query) && trim($query) !== '')
                                 trouvé(s) pour "<strong>{{ $query }}</strong>"
                             @else
                                 @if($annee && $annee != 'Tous')
@@ -141,9 +141,9 @@
                 @foreach($articles as $article)
                     <div class="col-md-6 mb-4">
                         <div class="card h-100 shadow-sm">
-                            <div class="card-header bg-light d-flex justify-content-between align-items-center">
-                                <h6 class="mb-0 text-truncate" title="{{ $article->titreArticle }}">
-                                    {{ Str::limit($article->titreArticle, 40) }}
+                            <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+                                <h6 class="mb-0 text-truncate" style="line-height: 30px"  title="{{ $article->titreArticle }}">
+                                    {{ Str::limit($article->titreArticle, 100) }}
                                 </h6>
                             </div>
                             <div class="card-body">
@@ -226,7 +226,7 @@
                     <div class="modal fade" id="detailsArticleModal-{{ $article->idArticle }}" tabindex="-1" role="dialog" aria-labelledby="detailsArticleModalLabel-{{ $article->idArticle }}" aria-hidden="true">
                         <div class="modal-dialog modal-lg" role="document">
                             <div class="modal-content">
-                                <div class="modal-header bg-dark text-white">
+                                <div class="modal-header">
                                     <h5 class="modal-title" id="detailsArticleModalLabel-{{ $article->idArticle }}">
                                         <i class="fas fa-file-alt mr-2"></i>Détails de l'article
                                     </h5>
@@ -352,7 +352,7 @@
     <div class="modal fade" id="ajouterArticleModal" tabindex="-1" role="dialog" aria-labelledby="ajouterArticleModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-lg" role="document">
             <div class="modal-content">
-                <div class="modal-header bg-dark text-white">
+                <div class="modal-header">
                     <h5 class="modal-title" id="ajouterArticleModalLabel">
                         <i class="fas fa-plus-circle mr-2"></i>Ajouter un article
                     </h5>
@@ -365,7 +365,7 @@
                     <div class="modal-body">
                         <!-- Informations de base -->
                         <div class="card mb-4">
-                            <div class="card-header bg-light">
+                            <div class="card-header bg-dark text-white">
                                 <h6 class="mb-0">Informations de base</h6>
                             </div>
                             <div class="card-body">
@@ -387,15 +387,17 @@
 
                                 <!-- Co-auteurs chercheurs -->
                                 <div class="form-group">
-                                    <label for="chercheurs">Co-auteurs chercheurs <span class="text-danger">*</span></label>
+                                    <label for="chercheurs">chercheurs <span class="text-danger">*</span></label>
                                     <select name="chercheurs[]" id="chercheurs" class="form-control" multiple>
                                         @foreach($chercheurs as $chercheur)
-                                            <option value="{{ $chercheur->idCherch }}">
+                                            <option value="{{ $chercheur->idCherch }}"
+                                                    @if(in_array($chercheur->idCherch, old('chercheurs', []))) selected @endif>
                                                 {{ $chercheur->prenomCherch }} {{ strtoupper($chercheur->nomCherch) }}
                                             </option>
                                         @endforeach
                                     </select>
                                 </div>
+
 
                                 <!-- Résumé -->
                                 <div class="form-group">
@@ -412,14 +414,14 @@
                                 <!-- Lien -->
                                 <div class="form-group">
                                     <label for="lienArticle">Lien</label>
-                                    <input type="url" name="lienArticle" id="lienArticle" class="form-control" placeholder="https://...">
+                                    <input type="url" name="lienArticle" id="lienArticle" class="form-control">
                                 </div>
                             </div>
                         </div>
 
                         <!-- Informations de publication -->
                         <div class="card mb-4">
-                            <div class="card-header bg-light">
+                            <div class="card-header bg-dark text-white">
                                 <h6 class="mb-0">Informations de publication</h6>
                             </div>
                             <div class="card-body">

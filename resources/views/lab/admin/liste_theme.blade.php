@@ -171,22 +171,24 @@
                                     <p class="mb-2">
                                         <strong>Intitulé :</strong> {{ $theme->intituleTheme }}
                                     </p>
-                                    <p class="mb-2">
-                                        <strong>Description :</strong>
-                                        @if($theme->descTheme)
+
+                                    @if($theme->descTheme)
+                                        <p class="mb-2">
+                                            <strong>Description :</strong>
                                             {{ $theme->descTheme }}
-                                        @else
-                                            <span class="text-muted">Non définie</span>
-                                        @endif
-                                    </p>
+                                        </p>
+                                    @endif
+
                                 </div>
 
                                 <!-- Axe de recherche -->
                                 <div class="mb-4">
-                                    <h6 class="font-weight-bold text-info mb-3">
-                                        <i class="fas fa-microscope"></i> Axe de recherche
-                                    </h6>
                                     @if($theme->axeRecherche)
+
+                                        <h6 class="font-weight-bold text-info mb-3">
+                                            <i class="fas fa-microscope"></i> Axe de recherche
+                                        </h6>
+
                                         <p class="mb-2">
                                             <strong>Titre :</strong> {{ $theme->axeRecherche->titreAxeRech }}
                                         </p>
@@ -196,8 +198,7 @@
                                                 {{ $theme->axeRecherche->descAxeRech }}
                                             @endif
                                         </p>
-                                    @else
-                                        <p class="text-muted">Aucun axe de recherche associé</p>
+
                                     @endif
                                 </div>
 
@@ -220,12 +221,12 @@
                                                 <tbody>
                                                     @foreach($theme->doctorants as $doctorant)
                                                         <tr>
-                                                            <td>{{ $doctorant->nomDoctorant }}</td>
-                                                            <td>{{ $doctorant->prenomDoctorant }}</td>
+                                                            <td>{{ $doctorant->nomDoc }}</td>
+                                                            <td>{{ $doctorant->prenomDoc }}</td>
                                                             <td>
-                                                                @if($doctorant->emailDoctorant)
-                                                                    <a href="mailto:{{ $doctorant->emailDoctorant }}">
-                                                                        {{ $doctorant->emailDoctorant }}
+                                                                @if($doctorant->emailDoc)
+                                                                    <a href="mailto:{{ $doctorant->emailDoc}}">
+                                                                        {{ $doctorant->emailDoc }}
                                                                     </a>
                                                                 @endif
                                                             </td>

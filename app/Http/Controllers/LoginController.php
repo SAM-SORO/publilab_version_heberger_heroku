@@ -97,24 +97,73 @@ class LoginController extends Controller
     {
         // Validation des données
         $request->validate([
-            'username' => 'required|string|max:255',
-            'email' => 'required|string|email|max:255|unique:users',
-            'password' => 'required|string|min:8|confirmed',
+            'type_compte' => 'required|in:chercheur,doctorant',
+            'nom' => 'required|string|max:30',
+            'email' => 'required|email|max:100',
+            'password' => 'required|string|min:6|confirmed',
+        ], [
+            'type_compte.required' => 'Veuillez sélectionner un type de compte',
+            'type_compte.in' => 'Type de compte invalide',
+            'nom.required' => 'Le nom est obligatoire',
+            'nom.max' => 'Le nom ne doit pas dépasser 30 caractères',
+            'email.required' => 'L\'email est obligatoire',
+            'email.email' => 'Veuillez fournir une adresse email valide',
+            'password.required' => 'Le mot de passe est obligatoire',
+            'password.min' => 'Le mot de passe doit faire au moins 6 caractères',
+            'password.confirmed' => 'Les mots de passe ne correspondent pas',
         ]);
+        // dd($request->all());
 
-        // Création de l'utilisateur
-        $user = Visiteur::create([
-            'nom' => $request->username,
-            'email' => $request->email,
-            'password' => Hash::make($request->password),
-        ]);
+        try {
+            // Vérification de l'unicité de l'email selon le type de compte
+            if ($request->type_compte === 'chercheur') {
+                if (Chercheur::where('emailCherch', $request->email)->exists()) {
+                    return redirect()->back()
+                        ->with('error', 'Cette adresse email est déjà utilisée par un chercheur')
+                        ->withInput();
+                }
+            } else {
+                if (Doctorant::where('emailDoc', $request->email)->exists()) {
+                    return redirect()->back()
+                        ->with('error', 'Cette adresse email est déjà utilisée par un doctorant')
+                        ->withInput();
+                }
+            }
 
-        // Authentification de l'utilisateur après l'inscription
-        if (Auth::guard('visiteur')->attempt(['email' => $request->email, 'password' => $request->password])) {
-            Auth::guard('visiteur')->login($user);
-            return redirect()->route('home');
+            // Création du compte selon le type
+            if ($request->type_compte === 'chercheur') {
+                Chercheur::create([
+                    'nomCherch' => $request->nom,
+                    'emailCherch' => $request->email,
+                    'password' => Hash::make($request->password),
+                ]);
+
+                if (Auth::guard('chercheur')->attempt(['emailCherch' => $request->email, 'password' => $request->password])) {
+                    return redirect()->route('chercheur.espace')
+                        ->with('success', 'Inscription réussie ! Bienvenue dans votre espace chercheur.');
+                }
+
+            } else {
+                $user = Doctorant::create([
+                    'nomDoc' => $request->nom,
+                    'emailDoc' => $request->email,
+                    'password' => Hash::make($request->password),
+                ]);
+
+                if (Auth::guard('doctorant')->attempt(['emailDoc' => $request->email, 'password' => $request->password])) {
+                    return redirect()->route('doctorant.espace')
+                        ->with('success', 'Inscription réussie ! Bienvenue dans votre espace doctorant.');
+                }
+            }
+
+            return redirect()->route('login')
+                ->with('success', 'Inscription réussie ! Vous pouvez maintenant vous connecter.');
+
+        } catch (\Exception $e) {
+            return redirect()->back()
+                ->with('error', 'Une erreur est survenue lors de l\'inscription.')
+                ->withInput();
         }
-
     }
 
 

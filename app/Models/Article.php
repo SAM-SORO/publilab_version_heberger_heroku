@@ -88,27 +88,7 @@ class Article extends Model
         ->withPivot('idCherch');
     }
 
-    /**
-     * Obtenir les chercheurs par ordre alphabétique
-     */
-    public function getChercheursOrdered()
-    {
-        return $this->chercheurs()
-            ->orderBy('nomCherch')
-            ->orderBy('prenomCherch')
-            ->get();
-    }
 
-    /**
-     * Obtenir les doctorants par ordre alphabétique
-     */
-    public function getDoctorantsOrdered()
-    {
-        return $this->doctorants()
-            ->orderBy('nomDoc')
-            ->orderBy('prenomDoc')
-            ->get();
-    }
 
     /**
      * Obtenir les articles par année
@@ -165,48 +145,58 @@ class Article extends Model
 
     /**
      * Obtenir tous les auteurs de l'article (chercheurs et doctorants) correctement formatés
-     *
+     * on souhaite recuperer les auteurs de l'articles
+     * soit c'est un article rediger par un chercheur simplement
+     *soit c'est un article rediger par un doctorant avec la contribution de different chercheur
      * @return string
      */
-    public function getFormattedAuthors()
+    public function getAuthors()
     {
         $auteurs = [];
 
-        // Si l'article a des doctorants
-        if ($this->doctorants->isNotEmpty()) {
-            // Récupérer les chercheurs associés via doctorant_article_chercheur
-            $chercheurIds = DB::table('doctorant_article_chercheur')
+        // Vérifier si l'article a des chercheurs uniquement (article rédigé par un chercheur)
+        if ($this->doctorants->isEmpty()) {
+            // Récupérer les chercheurs associés à l'article via la table 'chercheur_article'
+            $chercheurs = DB::table('chercheur_article')
                 ->where('idArticle', $this->idArticle)
-                ->pluck('idCherch')
-                ->toArray();
+                ->join('chercheurs', 'chercheur_article.idCherch', '=', 'chercheurs.idCherch')
+                ->orderBy('chercheur_article.rang') // Ordre par rang
+                ->get(['chercheurs.prenomCherch', 'chercheurs.nomCherch']);
 
-            $chercheurs = Chercheur::whereIn('idCherch', $chercheurIds)
-                ->orderBy('nomCherch')
-                ->orderBy('prenomCherch')
-                ->get();
-
-            // Ajouter les chercheurs à la liste
+            // Ajouter les chercheurs à la liste des auteurs
             foreach ($chercheurs as $chercheur) {
                 $auteurs[] = $chercheur->prenomCherch . ' ' . strtoupper($chercheur->nomCherch);
             }
+        }
+        // Si l'article est rédigé par un doctorant avec des chercheurs
+        else {
+            // Récupérer les doctorants associés à l'article
+            $doctorants = DB::table('doctorant_article_chercheur')
+                ->where('idArticle', $this->idArticle)
+                ->join('doctorants', 'doctorant_article_chercheur.idDoc', '=', 'doctorants.idDoc')
+                ->orderBy('doctorants.nomDoc') // Tri par nom
+                ->get(['doctorants.prenomDoc', 'doctorants.nomDoc']);
 
-            // Ajouter les doctorants à la liste
-            foreach ($this->doctorants as $doctorant) {
+            // Ajouter les doctorants à la liste des auteurs
+            foreach ($doctorants as $doctorant) {
                 $auteurs[] = $doctorant->prenomDoc . ' ' . strtoupper($doctorant->nomDoc);
             }
-        }
-        // Si l'article n'a pas de doctorants (chercheurs uniquement)
-        else {
-            // Récupérer les chercheurs avec leur rang
-            $chercheurs = $this->chercheurs()
-                ->orderBy('chercheur_article.rang')
-                ->get();
 
+            // Récupérer les chercheurs associés à cet article (par rapport aux doctorants)
+            $chercheurs = DB::table('doctorant_article_chercheur')
+                ->where('idArticle', $this->idArticle)
+                ->join('chercheurs', 'doctorant_article_chercheur.idCherch', '=', 'chercheurs.idCherch')
+                ->get(['chercheurs.prenomCherch', 'chercheurs.nomCherch']);
+
+            // Ajouter les chercheurs à la liste des auteurs
             foreach ($chercheurs as $chercheur) {
                 $auteurs[] = $chercheur->prenomCherch . ' ' . strtoupper($chercheur->nomCherch);
             }
         }
-        
-        return implode(', ', $auteurs);
+
+        // Utiliser array_unique pour éliminer les doublons après avoir formaté les noms
+        return implode(', ', array_unique($auteurs));
     }
+
+
 }

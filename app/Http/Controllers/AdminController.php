@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\Auth;
 use App\Models\TypeArticle;
 use App\Models\TypePublication;
 use App\Models\UMRI;
+use App\Models\Admin;
 use App\Models\Visiteur;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -48,6 +49,21 @@ class AdminController extends Controller
             ->pluck('count', 'year')
             ->toArray();
 
+        // Statistiques par UMRI - Version mise à jour
+        $statsParUMRI = DB::table('umris')
+            ->select('umris.sigleUMRI', 'umris.nomUMRI')
+            ->selectRaw('COUNT(DISTINCT chercheurs.idCherch) as total_chercheurs')
+            ->selectRaw('COUNT(DISTINCT doctorants.idDoc) as total_doctorants')
+            ->selectRaw('COUNT(DISTINCT articles.idArticle) as total_articles')
+            ->leftJoin('chercheurs', 'chercheurs.idUMRI', '=', 'umris.idUMRI')
+            ->leftJoin('doctorants', 'doctorants.idUMRI', '=', 'umris.idUMRI') // Nouvelle jointure directe
+            ->leftJoin('chercheur_article', 'chercheurs.idCherch', '=', 'chercheur_article.idCherch')
+            ->leftJoin('articles', 'chercheur_article.idArticle', '=', 'articles.idArticle')
+            ->groupBy('umris.idUMRI', 'umris.sigleUMRI', 'umris.nomUMRI')
+            ->get();
+
+
+
         return view('lab.admin.index', compact(
             'totalChercheurs',
             'totalDoctorants',
@@ -61,7 +77,8 @@ class AdminController extends Controller
             'totalBdIndexation',
             'totalTypeArticles',
             'totalTypePublications',
-            'articlesParAnnee'
+            'articlesParAnnee',
+            'statsParUMRI',  // Ajout des statistiques par UMRI
         ));
     }
 
@@ -189,8 +206,8 @@ class AdminController extends Controller
                     // Pour chaque chercheur, on les associe avec le doctorant
                     foreach ($validatedData['chercheurs'] as $chercheurId) {
                         DB::table('doctorant_article_chercheur')->insert([
-                            'idArticle' => $article->idArticle,
                             'idDoc' => $doctorantId,
+                            'idArticle' => $article->idArticle,
                             'idCherch' => $chercheurId, // Associe chaque chercheur au doctorant
                         ]);
                     }
@@ -455,64 +472,47 @@ class AdminController extends Controller
 
 
 
-    public function profil() {
-        $chercheurConnecter = Auth::user();
-        $chercheur = Chercheur::findOrFail($chercheurConnecter->idCherch);
-
-        return view('lab.admin.profil', compact('chercheur'));
+    public function profil()
+    {
+        $admin = Auth::guard('admin')->user();
+        return view('lab.admin.profil', compact('admin'));
     }
 
-    public function modifierProfil(Request $request)
+    public function updateProfil(Request $request)
     {
-        // Validation des données
         $validated = $request->validate([
-            'nomCherch' => 'required|string|max:255',
-            'prenomCherch' => 'required|string|max:255',
-            'genreCherch' => 'nullable|in:M,F',
-            'matriculeCherch' => 'required|string|max:20',
-            'emploiCherch' => 'nullable|string|max:100',
-            'departementCherch' => 'nullable|string|max:100',
-            'fonctionAdministrativeCherch' => 'nullable|string|max:100',
-            'specialiteCherch' => 'nullable|string|max:100',
-            'emailCherch' => 'required|email|max:100|unique:chercheurs,emailCherch,'.auth()->user()->idCherch.',idCherch',
-            'telCherch' => 'nullable|string|max:15',
+            'nom' => 'required|string|max:255',
+            'email' => 'required|email|unique:admins,email,' . auth()->id(),
             'current_password' => 'nullable|required_with:new_password',
             'new_password' => 'nullable|min:8|confirmed',
         ]);
 
-        DB::beginTransaction();
-
         try {
-            $chercheur = auth()->user();
+            DB::beginTransaction();
+
+            $admin = Admin::findOrFail(Auth::user()->id);
 
             // Mise à jour des informations de base
-            $updateData = collect($validated)->except(['current_password', 'new_password'])->toArray();
+            $admin->nom = $validated['nom'];
+            $admin->email = $validated['email'];
 
-            // Gestion du mot de passe
+            // Mise à jour du mot de passe si fourni
             if ($request->filled('current_password')) {
-                if (!Hash::check($request->current_password, $chercheur->password)) {
-                    return redirect()->route('admin.profil')
-                        ->withInput()
-                        ->with('error', 'Le mot de passe actuel est incorrect.');
+                if (!Hash::check($request->current_password, $admin->password)) {
+                    return redirect()->back()->with('error', 'Le mot de passe actuel est incorrect.');
                 }
 
-                if ($request->filled('new_password')) {
-                    $updateData['password'] = Hash::make($request->new_password);
-                }
+                $admin->password = Hash::make($request->new_password);
             }
 
-            // Utilisation de la méthode update pour éviter l'erreur
-            $chercheur->update($updateData);
+            $admin->save();
 
             DB::commit();
-            return redirect()->route('admin.profil')
-                ->with('success', 'Profil mis à jour avec succès.');
+            return redirect()->route('admin.profil')->with('success', 'Profil mis à jour avec succès.');
 
         } catch (\Exception $e) {
             DB::rollBack();
-            return redirect()->route('admin.profil')
-                ->withInput()
-                ->with('error', 'Erreur lors de la mise à jour du profil : ' . $e->getMessage());
+            return redirect()->back()->with('error', 'Une erreur est survenue lors de la mise à jour du profil.');
         }
     }
 

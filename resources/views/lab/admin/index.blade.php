@@ -25,18 +25,18 @@
                 <div class="card-body">
                     <div class="row no-gutters align-items-center">
                         <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
                                 Chercheurs</div>
                             <div class="h5 mb-0 font-weight-bold text-gray-800">{{ $totalChercheurs }}</div>
                         </div>
                         <div class="col-auto">
-                            <i class="fas fa-user-tie fa-2x text-gray-300"></i>
+                            <i class="fas fa-user-tie fa-2x text-warning"></i>
                         </div>
                     </div>
                 </div>
                 <div class="card-footer bg-transparent border-0">
-                    <a href="{{ route('admin.listeChercheurs') }}" class="text-primary small">
-                        Voir tous les chercheurs <i class="fas fa-arrow-right ml-1"></i>
+                    <a href="{{ route('admin.listeChercheurs') }}" class="text-success small">
+                        Voir tous <i class="fas fa-arrow-right ml-1"></i>
                     </a>
                 </div>
             </div>
@@ -53,13 +53,13 @@
                             <div class="h5 mb-0 font-weight-bold text-gray-800">{{ $totalDoctorants }}</div>
                         </div>
                         <div class="col-auto">
-                            <i class="fas fa-user-graduate fa-2x text-gray-300"></i>
+                            <i class="fas fa-user-graduate fa-2x text-warning"></i>
                         </div>
                     </div>
                 </div>
                 <div class="card-footer bg-transparent border-0">
                     <a href="{{ route('admin.listeDoctorants') }}" class="text-success small">
-                        Voir tous les doctorants <i class="fas fa-arrow-right ml-1"></i>
+                        Voir tous <i class="fas fa-arrow-right ml-1"></i>
                     </a>
                 </div>
             </div>
@@ -71,18 +71,18 @@
                 <div class="card-body">
                     <div class="row no-gutters align-items-center">
                         <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
                                 Articles</div>
                             <div class="h5 mb-0 font-weight-bold text-gray-800">{{ $totalArticles }}</div>
                         </div>
                         <div class="col-auto">
-                            <i class="fas fa-file-alt fa-2x text-gray-300"></i>
+                            <i class="fas fa-file-alt fa-2x text-warning"></i>
                         </div>
                     </div>
                 </div>
                 <div class="card-footer bg-transparent border-0">
-                    <a href="{{ route('admin.listeArticles') }}" class="text-info small">
-                        Voir tous les articles <i class="fas fa-arrow-right ml-1"></i>
+                    <a href="{{ route('admin.listeArticles') }}" class="text-success small">
+                        Voir tous <i class="fas fa-arrow-right ml-1"></i>
                     </a>
                 </div>
             </div>
@@ -94,18 +94,18 @@
                 <div class="card-body">
                     <div class="row no-gutters align-items-center">
                         <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
                                 Publications</div>
                             <div class="h5 mb-0 font-weight-bold text-gray-800">{{ $totalPublications }}</div>
                         </div>
                         <div class="col-auto">
-                            <i class="fas fa-book fa-2x text-gray-300"></i>
+                            <i class="fas fa-book fa-2x text-warning"></i>
                         </div>
                     </div>
                 </div>
                 <div class="card-footer bg-transparent border-0">
-                    <a href="{{ route('admin.listePublications') }}" class="text-warning small">
-                        Voir toutes les publications <i class="fas fa-arrow-right ml-1"></i>
+                    <a href="{{ route('admin.listePublications') }}" class="text-success small">
+                        Voir toutes<i class="fas fa-arrow-right ml-1"></i>
                     </a>
                 </div>
             </div>
@@ -120,18 +120,18 @@
                 <div class="card-body">
                     <div class="row no-gutters align-items-center">
                         <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
                                 UMRI</div>
                             <div class="h5 mb-0 font-weight-bold text-gray-800">{{ $totalUmris }}</div>
                         </div>
                         <div class="col-auto">
-                            <i class="fas fa-university fa-2x text-gray-300"></i>
+                            <i class="fas fa-university fa-2x text-warning"></i>
                         </div>
                     </div>
                 </div>
                 <div class="card-footer bg-transparent border-0">
-                    <a href="{{ route('admin.listeUmris') }}" class="text-danger small">
-                        Voir toutes les UMRI <i class="fas fa-arrow-right ml-1"></i>
+                    <a href="{{ route('admin.listeUmris') }}" class="text-success small">
+                        Voir toutes <i class="fas fa-arrow-right ml-1"></i>
                     </a>
                 </div>
             </div>
@@ -143,18 +143,18 @@
                 <div class="card-body">
                     <div class="row no-gutters align-items-center">
                         <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-secondary text-uppercase mb-1">
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
                                 Laboratoires</div>
                             <div class="h5 mb-0 font-weight-bold text-gray-800">{{ $totalLaboratoires }}</div>
                         </div>
                         <div class="col-auto">
-                            <i class="fas fa-flask fa-2x text-gray-300"></i>
+                            <i class="fas fa-flask fa-2x text-warning"></i>
                         </div>
                     </div>
                 </div>
                 <div class="card-footer bg-transparent border-0">
-                    <a href="{{ route('admin.listeLaboratoires') }}" class="text-secondary small">
-                        Voir tous les laboratoires <i class="fas fa-arrow-right ml-1"></i>
+                    <a href="{{ route('admin.listeLaboratoires') }}" class="text-success small">
+                        Voir tous <i class="fas fa-arrow-right ml-1"></i>
                     </a>
                 </div>
             </div>
@@ -166,18 +166,18 @@
                 <div class="card-body">
                     <div class="row no-gutters align-items-center">
                         <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-dark text-uppercase mb-1">
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
                                 Axes de recherche</div>
                             <div class="h5 mb-0 font-weight-bold text-gray-800">{{ $totalAxeRecherche }}</div>
                         </div>
                         <div class="col-auto">
-                            <i class="fas fa-compass fa-2x text-gray-300"></i>
+                            <i class="fas fa-compass fa-2x text-warning"></i>
                         </div>
                     </div>
                 </div>
                 <div class="card-footer bg-transparent border-0">
-                    <a href="{{ route('admin.listeAxeRecherche') }}" class="text-dark small">
-                        Voir tous les axes <i class="fas fa-arrow-right ml-1"></i>
+                    <a href="{{ route('admin.listeAxeRecherche') }}" class="text-success small">
+                        Voir tous <i class="fas fa-arrow-right ml-1"></i>
                     </a>
                 </div>
             </div>
@@ -189,18 +189,18 @@
                 <div class="card-body">
                     <div class="row no-gutters align-items-center">
                         <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
                                 Thèmes</div>
                             <div class="h5 mb-0 font-weight-bold text-gray-800">{{ $totalThemes }}</div>
                         </div>
                         <div class="col-auto">
-                            <i class="fas fa-lightbulb fa-2x text-gray-300"></i>
+                            <i class="fas fa-lightbulb fa-2x text-warning"></i>
                         </div>
                     </div>
                 </div>
                 <div class="card-footer bg-transparent border-0">
-                    <a href="{{ route('admin.listeTheme') }}" class="text-primary small">
-                        Voir tous les thèmes <i class="fas fa-arrow-right ml-1"></i>
+                    <a href="{{ route('admin.listeTheme') }}" class="text-success small">
+                        Voir tous <i class="fas fa-arrow-right ml-1"></i>
                     </a>
                 </div>
             </div>
@@ -220,13 +220,13 @@
                             <div class="h5 mb-0 font-weight-bold text-gray-800">{{ $totalGrades }}</div>
                         </div>
                         <div class="col-auto">
-                            <i class="fas fa-award fa-2x text-gray-300"></i>
+                            <i class="fas fa-award fa-2x text-warning"></i>
                         </div>
                     </div>
                 </div>
                 <div class="card-footer bg-transparent border-0">
                     <a href="{{ route('admin.listeGrade') }}" class="text-success small">
-                        Voir tous les grades <i class="fas fa-arrow-right ml-1"></i>
+                        Voir tous <i class="fas fa-arrow-right ml-1"></i>
                     </a>
                 </div>
             </div>
@@ -238,18 +238,18 @@
                 <div class="card-body">
                     <div class="row no-gutters align-items-center">
                         <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
                                 Bases d'indexation</div>
                             <div class="h5 mb-0 font-weight-bold text-gray-800">{{ $totalBdIndexation }}</div>
                         </div>
                         <div class="col-auto">
-                            <i class="fas fa-database fa-2x text-gray-300"></i>
+                            <i class="fas fa-database fa-2x text-warning"></i>
                         </div>
                     </div>
                 </div>
                 <div class="card-footer bg-transparent border-0">
-                    <a href="{{ route('admin.listeBaseIndexation') }}" class="text-info small">
-                        Voir toutes les bases <i class="fas fa-arrow-right ml-1"></i>
+                    <a href="{{ route('admin.listeBaseIndexation') }}" class="text-success small">
+                        Voir toutes <i class="fas fa-arrow-right ml-1"></i>
                     </a>
                 </div>
             </div>
@@ -261,18 +261,18 @@
                 <div class="card-body">
                     <div class="row no-gutters align-items-center">
                         <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
                                 Types d'articles</div>
                             <div class="h5 mb-0 font-weight-bold text-gray-800">{{ $totalTypeArticles }}</div>
                         </div>
                         <div class="col-auto">
-                            <i class="fas fa-file-invoice fa-2x text-gray-300"></i>
+                            <i class="fas fa-file-invoice fa-2x text-warning"></i>
                         </div>
                     </div>
                 </div>
                 <div class="card-footer bg-transparent border-0">
-                    <a href="{{ route('admin.listeTypeArticle') }}" class="text-warning small">
-                        Voir tous les types d'articles <i class="fas fa-arrow-right ml-1"></i>
+                    <a href="{{ route('admin.listeTypeArticle') }}" class="text-success small">
+                        Voir tous <i class="fas fa-arrow-right ml-1"></i>
                     </a>
                 </div>
             </div>
@@ -284,26 +284,90 @@
                 <div class="card-body">
                     <div class="row no-gutters align-items-center">
                         <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">
-                                Types de publications</div>
+                            <div class=" text-sm-left font-weight-bold text-success text-uppercase mb-1">
+                                Types publications</div>
                             <div class="h5 mb-0 font-weight-bold text-gray-800">{{ $totalTypePublications }}</div>
                         </div>
                         <div class="col-auto">
-                            <i class="fas fa-book-open fa-2x text-gray-300"></i>
+                            <i class="fas fa-book-open fa-2x text-warning"></i>
                         </div>
                     </div>
                 </div>
                 <div class="card-footer bg-transparent border-0">
-                    <a href="{{ route('admin.listeTypePublications') }}" class="text-danger small">
-                        Voir tous les types de publications <i class="fas fa-arrow-right ml-1"></i>
+                    <a href="{{ route('admin.listeTypePublications') }}" class="text-success small">
+                        Voir tous <i class="fas fa-arrow-right ml-1"></i>
                     </a>
                 </div>
             </div>
         </div>
     </div>
 
+    <!-- Statistiques par UMRI -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-dark text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-chart-bar"></i> Statistiques par UMRI
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Catégorie</th>
+                                    @foreach($statsParUMRI as $stat)
+                                        <th class="text-center">
+                                            <strong>{{ $stat->sigleUMRI }}</strong>
+                                        </th>
+                                    @endforeach
+                                    <th class="text-center">Total</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Ligne Chercheurs -->
+                                <tr>
+                                    <td><i class="fas fa-user-tie text-primary mr-2"></i>Chercheurs</td>
+                                    @foreach($statsParUMRI as $stat)
+                                        <td class="text-center">
+                                            <span class="badge badge-info">{{ $stat->total_chercheurs }}</span>
+                                        </td>
+                                    @endforeach
+                                    <td class="text-center"><strong>{{ $totalChercheurs }}</strong></td>
+                                </tr>
+
+                                <!-- Ligne Doctorants -->
+                                <tr>
+                                    <td><i class="fas fa-user-graduate text-success mr-2"></i>Doctorants</td>
+                                    @foreach($statsParUMRI as $stat)
+                                        <td class="text-center">
+                                            <span class="badge badge-success">{{ $stat->total_doctorants }}</span>
+                                        </td>
+                                    @endforeach
+                                    <td class="text-center"><strong>{{ $totalDoctorants }}</strong></td>
+                                </tr>
+
+                                <!-- Ligne Articles -->
+                                <tr>
+                                    <td><i class="fas fa-file-alt text-warning mr-2"></i>Articles</td>
+                                    @foreach($statsParUMRI as $stat)
+                                        <td class="text-center">
+                                            <span class="badge badge-primary">{{ $stat->total_articles }}</span>
+                                        </td>
+                                    @endforeach
+                                    <td class="text-center"><strong>{{ $totalArticles }}</strong></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Graphique des articles par année -->
-    <div class="row">
+    <div class="row mt-4">
         <div class="col-12 mb-4">
             <div class="card shadow">
                 <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between bg-light">

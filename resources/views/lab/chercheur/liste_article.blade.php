@@ -54,7 +54,6 @@
             <!-- Filtres -->
             <div class="col-md-9">
                 <form action="{{ route('chercheur.listeArticles') }}" method="GET" class="row">
-
                     <!-- Filtre par année -->
                     <div class="col-md-4 mb-3">
                         <label for="annee" class="text-secondary small mb-1">Année</label>
@@ -83,25 +82,29 @@
                 </form>
             </div>
 
-            <!-- Bouton d'ajout -->
-            <div class="col-md-3 text-right mb-3">
-                <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#addArticleModal">
-                    <i class="fas fa-plus-circle"></i> Nouvel article
+            <!-- Boutons d'actions -->
+            <div class="d-flex justify-content-end">
+
+                <button type="button" class="btn btn-primary btn-sm mr-3" data-toggle="modal" data-target="#addArticleModal">
+                    <i class="fas fa-plus-circle"></i> Nouveau
+                </button>
+
+                <button type="button" class="btn btn-success btn-sm" data-toggle="modal" data-target="#coAuteurModal">
+                    <i class="fas fa-user-plus"></i> Co-auteur
                 </button>
             </div>
         </div>
 
-        <!-- Affichage du nombre d'articles - Version améliorée -->
         <div class="card shadow-sm mb-1">
             <div class="card-body py-3">
                 <div class="d-flex justify-content-between align-items-center">
                     <div>
                         <span class="text-primary font-weight-bold">
                             <i class="fas fa-file-alt mr-2"></i>
-                            {{ $articles->total() }} article(s)
+                            {{ $articlesChercheur->total() }} article(s)
                         </span>
                         <span class="text-muted ml-2">
-                            @if(isset($query))
+                            @if(isset($query) && trim($query) !== '')
                                 trouvé(s) pour "<strong>{{ $query }}</strong>"
                             @else
                                 @if($annee && $annee != 'Tous')
@@ -120,7 +123,7 @@
                     </div>
                     <div>
                         <a href="{{ route('chercheur.listeArticles') }}" class="btn btn-sm btn-outline-secondary">
-                            <i class="fas fa-sync-alt"></i> Réinitialiser les filtres
+                            <i class="fas fa-sync-alt"></i> Rafraîchir
                         </a>
                     </div>
                 </div>
@@ -130,7 +133,7 @@
 
 
     <div class="p-5">
-        @if ($articles->isEmpty())
+        @if ($articlesChercheur->isEmpty())
             <div class="alert alert-info" role="alert">
                 Aucun article trouvé.
             </div>
@@ -140,28 +143,17 @@
 
         @else
             <div class="row row-cols-1 row-cols-md-2 g-4">
-                @foreach ($articles as $article)
+                @foreach ($articlesChercheur as $article)
                     <div class="col mb-4">
                         <div class="card shadow-sm h-100">
-                            <div class="card-header bg-dark text-white">
-                                <h5 class="card-title mb-0">{{ Str::limit($article->titreArticle, 60) }}</h5>
+                            <div class="card-header bg-dark text-white"">
+                                <h6 class="card-title mb-0" style="line-height: 25px">{{ Str::limit($article->titreArticle, 100) }} </h6>
                             </div>
                             <div class="card-body">
                                 <!-- Auteurs -->
                                 <div class="mb-3">
                                     <p class="mb-1 font-weight-bold">
-                                        @foreach ($article->chercheurs as $chercheur)
-                                            {{ $chercheur->prenomCherch }} {{ strtoupper($chercheur->nomCherch) }}
-                                            @if (!$loop->last), @endif
-                                        @endforeach
-                                    </p>
-                                    <p>
-                                        @if($article->doctorants->isNotEmpty())
-                                            @foreach ($article->doctorants as $doctorant)
-                                                {{ $doctorant->prenomDoc }} {{ strtoupper($doctorant->nomDoc) }}
-                                                @if (!$loop->last), @endif
-                                            @endforeach
-                                        @endif
+                                        <p>{{ $article->getAuthors() }}</p>
                                     </p>
 
                                     <!-- Informations de publication -->
@@ -249,7 +241,7 @@
 
                                         <!-- Auteurs -->
                                         <h6 class="font-weight-bold mt-3">Auteurs</h6>
-                                        <p>{{ $article->getFormattedAuthors() }}</p>
+                                        <p>{{ $article->getAuthors() }}</p>
 
                                         <!-- Publication -->
                                         @if($article->publication)
@@ -288,7 +280,7 @@
 
             <!-- Pagination -->
             <div class="d-flex justify-content-center mt-4">
-                {{ $articles->links('vendor.pagination.bootstrap-4') }}
+                {{ $articlesChercheur->links('vendor.pagination.bootstrap-4') }}
             </div>
         @endif
     </div>
@@ -310,7 +302,7 @@
 
                     <!-- Informations principales -->
                     <div class="card mb-3">
-                        <div class="card-header bg-dark text-white">
+                        <div class="card-header bg-dark text-white"">
                             <h6 class="mb-0">Informations principales</h6>
                         </div>
                         <div class="card-body">
@@ -334,19 +326,29 @@
                                 </select>
                             </div>
 
-                            <!-- Co-auteurs chercheurs -->
+
                             <div class="form-group">
-                                <label for="chercheurs">Co-auteurs chercheurs</label>
-                                <select name="chercheurs[]" id="chercheurs" class="form-control" multiple>
+                                <label for="chercheurSelect">Sélectionner un chercheur</label>
+                                <select id="chercheurSelect" class="form-control">
+                                    <option value="">-- Choisir un chercheur --</option>
                                     @foreach($chercheurs as $chercheur)
-                                        @if($chercheur->idCherch != Auth::user()->idCherch)
-                                            <option value="{{ $chercheur->idCherch }}">
-                                                {{ $chercheur->prenomCherch }} {{ $chercheur->nomCherch }}
-                                            </option>
-                                        @endif
+                                        <option value="{{ $chercheur->idCherch }}">
+                                            {{ strtoupper($chercheur->nomCherch) }} {{ $chercheur->prenomCherch }}
+                                        </option>
                                     @endforeach
                                 </select>
                             </div>
+
+                            <div class="form-group">
+                                <small><strong>Liste des chercheurs sélectionnés</strong></small>
+                                <ul id="chercheurList" class="list-group"></ul>
+                            </div>
+
+                            <!-- Champs cachés pour envoyer les données au backend -->
+                            <input type="hidden" name="chercheurs" id="chercheurs_input">
+                            <input type="hidden" name="rangs" id="rangs_input">
+
+
 
                             <!-- Co-auteurs doctorants -->
                             <div class="form-group">
@@ -457,9 +459,115 @@
 </div>
 
 
+<!-- Modal pour devenir co-auteur -->
+<div class="modal fade" id="coAuteurModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Devenir Co-auteur</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <form action="{{ route('chercheur.ajouterCoAuteur') }}" method="POST">
+                @csrf
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label>Sélectionner les articles dont vous êtes co-auteur</label>
+                        <select class="form-control" name="articles[]" multiple>
+                            @foreach($allArticles as $article)
+                                {{-- exclure les articles pour les quelles il est chercheur --}}
+                                @if(!$article->isCoAuthor)
+                                    <option value="{{ $article->idArticle }}">
+                                        {{ $article->titreArticle }}
+                                        {{-- @if($article->publication)
+                                            ({{ $article->publication->titrePub }})
+                                        @endif --}}
+                                    </option>
+                                @endif
+                            @endforeach
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Fermer</button>
+                    <button type="submit" class="btn btn-primary">Confirmer</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 @endsection
 
 @section('scripts')
+
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            let chercheurSelect = document.getElementById("chercheurSelect");
+            let chercheurList = document.getElementById("chercheurList");
+            let chercheurInput = document.getElementById("chercheurs_input");
+            let rangInput = document.getElementById("rangs_input");
+
+            let selectedChercheurs = [];
+
+            chercheurSelect.addEventListener("change", function () {
+                let chercheurId = this.value;
+                let chercheurName = this.options[this.selectedIndex].text;
+
+                if (chercheurId && !selectedChercheurs.find(c => c.id === chercheurId)) {
+                    let chercheurItem = document.createElement("li");
+                    chercheurItem.classList.add("list-group-item", "d-flex", "justify-content-between", "align-items-center");
+                    chercheurItem.dataset.id = chercheurId;
+
+                    let rang = selectedChercheurs.length + 1;
+
+                    chercheurItem.innerHTML = `
+                        <span>${chercheurName} (Rang: <span class="rang">${rang}</span>)</span>
+                        <button type="button" class="btn btn-danger btn-sm remove-chercheur">X</button>
+                    `;
+
+                    chercheurList.appendChild(chercheurItem);
+                    selectedChercheurs.push({ id: parseInt(chercheurId), rang: rang });
+
+                    updateHiddenFields();
+                    this.value = "";
+                }
+            });
+
+            chercheurList.addEventListener("click", function (e) {
+                if (e.target.classList.contains("remove-chercheur")) {
+                    let chercheurItem = e.target.closest("li");
+                    let chercheurId = parseInt(chercheurItem.dataset.id);
+
+                    selectedChercheurs = selectedChercheurs.filter(c => c.id !== chercheurId);
+                    chercheurItem.remove();
+
+                    updateRanks();
+                    updateHiddenFields();
+                }
+            });
+
+            function updateRanks() {
+                let items = chercheurList.children;
+                selectedChercheurs.forEach((c, index) => {
+                    c.rang = index + 1;
+                    items[index].querySelector(".rang").textContent = c.rang;
+                });
+            }
+
+            function updateHiddenFields() {
+                let chercheurIds = selectedChercheurs.map(c => c.id);
+                let rangs = selectedChercheurs.map(c => c.rang);
+
+                chercheurInput.value = chercheurIds.join(",");  // Stocke les IDs sous forme de chaîne "4,3,1"
+                rangInput.value = rangs.join(",");  // Stocke les rangs sous forme de chaîne "1,2,3"
+            }
+        });
+
+    </script>
+
 
     <script>
 
@@ -468,7 +576,19 @@
             $('#chercheurs').select2({
                 width: '100%',
                 placeholder: 'Sélectionner...',
-                allowClear: true
+                maximumSelectionLength: 1,
+                language: {
+                    noResults: function() {
+                        return "Aucune base trouvée";
+                    },
+                    searching: function() {
+                        return "Recherche...";
+                    },
+                    maximumSelected: function(args) {
+                        return "Vous ne pouvez sélectionner qu'un seul élément";
+                    }
+                },
+
             });
 
             $('#doctorants').select2({
@@ -537,6 +657,17 @@
         }
 
 
+    </script>
+
+
+    <script>
+        $(document).ready(function() {
+            $('select[name="articles[]"]').select2({
+                width: '100%',
+                placeholder: 'Sélectionner les articles...',
+                allowClear: true
+            });
+        });
     </script>
 
 @endsection

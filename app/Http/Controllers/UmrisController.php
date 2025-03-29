@@ -61,6 +61,7 @@ class UmrisController extends Controller
 
     public function update(Request $request, $id)
     {
+
         $validated = $request->validate([
             'sigleUMRI' => 'required|string|max:50|unique:umris,sigleUMRI,' . $id . ',idUMRI',
             'nomUMRI' => 'required|string|max:255|unique:umris,nomUMRI,' . $id . ',idUMRI',
@@ -73,7 +74,7 @@ class UmrisController extends Controller
 
         try {
             $umri = UMRI::findOrFail($id);
-            $umri->update($validated); // Opération simple, pas besoin de transaction
+            $umri->update($validated);
 
             return redirect()->route('admin.listeUmris')
                 ->with('success', 'UMRI modifiée avec succès.');

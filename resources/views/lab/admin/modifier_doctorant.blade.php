@@ -154,6 +154,31 @@
             </div>
         </div>
 
+        <!-- Après la carte "Thème et encadrants" et avant la carte "Modification du mot de passe" -->
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-dark text-white">
+                <h5 class="mb-0"><i class="fas fa-university"></i> Rattachement UMRI</h5>
+            </div>
+            <div class="card-body">
+                <div class="form-group">
+                    <label for="idUMRI" class="font-weight-bold">UMRI <span class="text-danger">*</span></label>
+                    <select class="form-control select2 @error('idUMRI') is-invalid @enderror"
+                            id="idUMRI" name="idUMRI" required>
+                        <option value="">Sélectionner une UMRI</option>
+                        @foreach($umris as $umri)
+                            <option value="{{ $umri->idUMRI }}"
+                                    {{ old('idUMRI', $doctorant->idUMRI) == $umri->idUMRI ? 'selected' : '' }}>
+                                {{ $umri->sigleUMRI }}
+                            </option>
+                        @endforeach
+                    </select>
+                    @error('idUMRI')
+                        <span class="invalid-feedback">{{ $message }}</span>
+                    @enderror
+                </div>
+            </div>
+        </div>
+
         <!-- Après les informations de contact -->
         <div class="card shadow-sm mb-4">
             <div class="card-header bg-light">
@@ -224,6 +249,21 @@
                 },
 
             },
+        });
+
+        // Initialisation de Select2 pour UMRI
+        $('#idUMRI').select2({
+            placeholder: 'Sélectionner une UMRI',
+            allowClear: true,
+            width: '100%',
+            language: {
+                noResults: function() {
+                    return "Aucune UMRI trouvée";
+                },
+                searching: function() {
+                    return "Recherche...";
+                }
+            }
         });
 
         $('.select2-selection').css('min-height', '40px'); // Applique la hauteur après initialisation

@@ -22,7 +22,8 @@ class Doctorant extends Authenticatable
         'password',
         'emailDoc',
         'telDoc',
-        'idTheme'
+        'idTheme',
+        'idUMRI'  // Ajout de idUMRI
     ];
 
     protected $guard = "doctorant";
@@ -49,7 +50,7 @@ class Doctorant extends Authenticatable
     {
         return $this->belongsToMany(Chercheur::class, 'doctorant_chercheur', 'idDoc', 'idCherch')
             ->withPivot(['dateDebut', 'dateFin']);
-            
+
             // ->withTimestamps();
 
     }
@@ -60,6 +61,12 @@ class Doctorant extends Authenticatable
         return $this->belongsToMany(Article::class, 'doctorant_article_chercheur', 'idDoc', 'idArticle')
             ->withPivot('idCherch');
             // ->withTimestamps();
+    }
+
+    // Ajouter la relation avec UMRI
+    public function umri()
+    {
+        return $this->belongsTo(UMRI::class, 'idUMRI', 'idUMRI');
     }
 
     /**

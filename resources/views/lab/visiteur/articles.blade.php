@@ -84,6 +84,9 @@
                                 <div class="ml-3">
                                     <!-- Titre de l'article avec les auteurs -->
                                     <p class="mb-1">
+                                        <span class="font-weight-bold">{{ $article->idArticle }}</span>
+                                        <span class="font-weight-bold">{{ $article->titreArticle }}</span>
+
                                         @foreach ($article->chercheurs as $chercheur)
                                             {{ $chercheur->prenomCherch }} {{ strtoupper($chercheur->nomCherch) }}@if (!$loop->last),@endif
                                         @endforeach
@@ -97,7 +100,7 @@
                                             @if (!$loop->last),@endif
                                         @endforeach
 
-                                        <span class="font-weight-bold">{{ $article->titreArticle }}</span>
+
                                     </p>
 
                                     <!-- Informations de publication -->

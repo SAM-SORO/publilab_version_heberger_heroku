@@ -51,19 +51,35 @@
 
                         <!-- Co-auteurs chercheurs -->
                         <div class="form-group">
-                            <label for="chercheurs">Co-auteurs chercheurs</label>
-                            <select name="chercheurs[]" id="chercheurs" class="form-control" multiple>
+                            <label for="chercheurSelect">Sélectionner un chercheur</label>
+                            <select id="chercheurSelect" class="form-control">
+                                <option value="">-- Choisir un chercheur --</option>
                                 @foreach($chercheurs as $chercheur)
-                                    <option value="{{ $chercheur->idCherch }}"
-                                        {{ in_array($chercheur->idCherch, $chercheurIds) ? 'selected' : '' }}>
-                                        {{ $chercheur->prenomCherch }} {{ $chercheur->nomCherch }}
+                                    <option value="{{ $chercheur->idCherch }}">
+                                        {{ strtoupper($chercheur->nomCherch) }} {{ $chercheur->prenomCherch }}
                                     </option>
                                 @endforeach
                             </select>
-                            @error('chercheurs')
-                                <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
                         </div>
+
+                        <div class="form-group">
+                            <small><strong>Liste des chercheurs co-auteurs</strong></small>
+                            <ul id="chercheurList" class="list-group">
+                                @foreach($article->chercheurs as $chercheur)
+                                    <li class="list-group-item d-flex justify-content-between align-items-center" data-id="{{ $chercheur->idCherch }}">
+                                        <span>
+                                            {{ strtoupper($chercheur->nomCherch) }} {{ $chercheur->prenomCherch }}
+                                            (Rang: <span class="rang">{{ $chercheur->pivot->rang }}</span>)
+                                        </span>
+                                        <button type="button" class="btn btn-danger btn-sm remove-chercheur">X</button>
+                                    </li>
+                                @endforeach
+                            </ul>
+                        </div>
+
+                        <!-- Champs cachés pour les données des chercheurs -->
+                        <input type="hidden" name="chercheurs" id="chercheurs_input" value="{{ $article->chercheurs->pluck('idCherch')->join(',') }}">
+                        <input type="hidden" name="rangs" id="rangs_input" value="{{ $article->chercheurs->pluck('pivot.rang')->join(',') }}">
 
                         <!-- Co-auteurs doctorants -->
                         <div class="form-group">
@@ -291,6 +307,74 @@
 
         // Ajuster la hauteur des sélecteurs Select2
         $('.select2-selection').css('min-height', '40px');
+    });
+</script>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        let chercheurSelect = document.getElementById("chercheurSelect");
+        let chercheurList = document.getElementById("chercheurList");
+        let chercheurInput = document.getElementById("chercheurs_input");
+        let rangInput = document.getElementById("rangs_input");
+
+        // Initialiser le tableau des chercheurs sélectionnés avec les données existantes
+        let selectedChercheurs = Array.from(chercheurList.children).map(item => ({
+            id: parseInt(item.dataset.id),
+            rang: parseInt(item.querySelector('.rang').textContent)
+        }));
+
+        chercheurSelect.addEventListener("change", function () {
+            let chercheurId = this.value;
+            let chercheurName = this.options[this.selectedIndex].text;
+
+            if (chercheurId && !selectedChercheurs.find(c => c.id === parseInt(chercheurId))) {
+                let chercheurItem = document.createElement("li");
+                chercheurItem.classList.add("list-group-item", "d-flex", "justify-content-between", "align-items-center");
+                chercheurItem.dataset.id = chercheurId;
+
+                let rang = selectedChercheurs.length + 1;
+
+                chercheurItem.innerHTML = `
+                    <span>${chercheurName} (Rang: <span class="rang">${rang}</span>)</span>
+                    <button type="button" class="btn btn-danger btn-sm remove-chercheur">X</button>
+                `;
+
+                chercheurList.appendChild(chercheurItem);
+                selectedChercheurs.push({ id: parseInt(chercheurId), rang: rang });
+
+                updateHiddenFields();
+                this.value = "";
+            }
+        });
+
+        chercheurList.addEventListener("click", function (e) {
+            if (e.target.classList.contains("remove-chercheur")) {
+                let chercheurItem = e.target.closest("li");
+                let chercheurId = parseInt(chercheurItem.dataset.id);
+
+                selectedChercheurs = selectedChercheurs.filter(c => c.id !== chercheurId);
+                chercheurItem.remove();
+
+                updateRanks();
+                updateHiddenFields();
+            }
+        });
+
+        function updateRanks() {
+            let items = chercheurList.children;
+            selectedChercheurs.forEach((c, index) => {
+                c.rang = index + 1;
+                items[index].querySelector(".rang").textContent = c.rang;
+            });
+        }
+
+        function updateHiddenFields() {
+            let chercheurIds = selectedChercheurs.map(c => c.id);
+            let rangs = selectedChercheurs.map(c => c.rang);
+
+            chercheurInput.value = chercheurIds.join(",");
+            rangInput.value = rangs.join(",");
+        }
     });
 </script>
 @endsection

@@ -47,10 +47,18 @@ class UMRI extends Model
         return $this->belongsTo(Chercheur::class, 'idDirecteurUMRI', 'idCherch');
     }
 
+    // Ajouter la relation avec les doctorants (one-to-many)
+    public function doctorants()
+    {
+        return $this->hasMany(Doctorant::class, 'idUMRI', 'idUMRI');
+    }
+
     // Vérifier si l'UMRI a des dépendances
     public function hasDependencies()
     {
-        return $this->laboratoires()->exists() || $this->chercheurs()->exists();
+        return $this->laboratoires()->exists() ||
+               $this->chercheurs()->exists() ||
+               $this->doctorants()->exists();
     }
 
     // Obtenir le nombre total de chercheurs
@@ -63,6 +71,12 @@ class UMRI extends Model
     public function getNombreLaboratoires()
     {
         return $this->laboratoires()->count();
+    }
+
+    // Ajouter une méthode pour obtenir le nombre de doctorants
+    public function getNombreDoctorants()
+    {
+        return $this->doctorants()->count();
     }
 
     // Vérifier si l'UMRI a un directeur

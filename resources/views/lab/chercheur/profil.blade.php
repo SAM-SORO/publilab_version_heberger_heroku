@@ -21,7 +21,7 @@
         </div>
     @endif
 
-    <div class="card shadow-sm">
+    <div class="card shadow-sm mt-5">
         <div class="card-header bg-light">
             <h5 class="mb-0"><i class="fas fa-user-circle"></i> Mon Profil</h5>
         </div>

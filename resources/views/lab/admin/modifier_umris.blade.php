@@ -21,7 +21,7 @@
 
     <form action="{{ route('admin.updateUmris', $umri->idUMRI) }}" method="POST">
         @csrf
-        @method('PUT')
+        @method('POST')
 
         <!-- Informations principales -->
         <div class="card shadow-sm mb-4">

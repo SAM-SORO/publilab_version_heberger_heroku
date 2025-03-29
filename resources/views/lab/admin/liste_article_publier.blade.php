@@ -78,7 +78,7 @@
                             {{ $articles->total() }} article(s)
                         </span>
                         <span class="text-muted ml-2">
-                            @if(isset($query))
+                            @if(isset($query) && trim($query) !== '')
                                 trouvé(s) pour "<strong>{{ $query }}</strong>"
                             @else
                                 @if($annee && $annee != 'Tous')
@@ -118,16 +118,26 @@
                 @foreach ($articles as $article)
                     <div class="col mb-4">
                         <div class="card shadow-sm h-100">
-                            <div class="card-header bg-light text-dark">
-                                <h5 class="card-title mb-0">{{ $article->titreArticle }}</h5>
+                            <div class="card-header bg-dark text-white">
+                                <h6 class="card-title mb-0" style="line-height: 30px">{{ $article->titreArticle }}</h6>
                             </div>
                             <div class="card-body">
                                 <!-- Auteurs -->
                                 <div class="mb-3">
                                     <strong>Auteurs:</strong>
+                                    <p class="mb-1 font-weight-bold">
+                                        {{ $article->getAuthors() }}
+                                    </p>
+                                    <p>
+                                        {{-- {{ $article-> getDoctorantsOrdered() }} --}}
+                                        {{-- @if($article->doctorants->isNotEmpty())
+                                            @foreach ($article->doctorants as $doctorant)
+                                                {{ $doctorant->prenomDoc }} {{ strtoupper($doctorant->nomDoc) }}
+                                                @if (!$loop->last), @endif
+                                            @endforeach
+                                        @endif --}}
+                                    </p>
                                     <p class="mb-1">
-                                        {{ $article->getFormattedAuthors() }}
-
                                         @if($article->doctorants->isNotEmpty())
                                             <p>
                                                 <span class="badge badge-info">Chercheur/Doctorant</span>
@@ -223,7 +233,7 @@
 
                                         <!-- Auteurs -->
                                         <h6 class="font-weight-bold mt-3">Auteurs</h6>
-                                        <p>{{ $article->getFormattedAuthors() }}</p>
+                                        <p>{{ $article->getAuthors() }}</p>
 
                                         <!-- Publication -->
                                         @if($article->publication)
@@ -327,7 +337,7 @@
 
                         <!-- Auteurs -->
                         <div class="card shadow-sm mb-4">
-                            <div class="card-header bg-dark text-white">
+                            <div class="card-header bg-dark text-white"">
                                 <h6 class="mb-0">Auteurs</h6>
                             </div>
                             <div class="card-body">
@@ -469,7 +479,7 @@
 
                         <!-- Liens et identifiants -->
                         <div class="card shadow-sm mb-4">
-                            <div class="card-header bg-dark text-white">
+                            <div class="card-header bg-dark text-white"">
                                 <h6 class="mb-0">Liens et identifiants</h6>
                             </div>
                             <div class="card-body">

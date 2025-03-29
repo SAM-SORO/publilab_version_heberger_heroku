@@ -82,6 +82,9 @@ Route::middleware(['auth:chercheur'])->group(function(){
 
     Route::get('/recherche-article/chercheur', [ChercheurController::class, 'rechercheArticle'])->name('chercheur.rechercherArticle');
 
+    Route::post('/chercheur/ajouter-coauteur', [ChercheurController::class, 'ajouterCoAuteur'])->name('chercheur.ajouterCoAuteur');
+
+
 });
 
 
@@ -96,7 +99,7 @@ Route::middleware(['auth:doctorant'])->group(function(){
 
     Route::post('/doctorant-article/{id}/modifier', [DoctorantController::class, 'updateArticle'])->name('doctorant.updateArticle');
 
-    Route::post('/supprimer-article/{id}', [DoctorantController::class, 'delete'])->name('doctorant.supprimerArticle');
+    Route::post('/supprimer-article/{id}', [DoctorantController::class, 'deleteArticle'])->name('doctorant.supprimerArticle');
 
     Route::post('/enregistrer-article', [DoctorantController::class, 'enregistrerArticle'])->name('doctorant.enregistrerArticle');
 
@@ -133,7 +136,7 @@ Route::prefix('admin')->middleware(['auth:admin'])->group(function (){
     // Routes pour le profil du chercheur
     Route::get('/profil', [AdminController::class, 'profil'])->name('admin.profil');
 
-    Route::post('/modifier-profil', [AdminController::class, 'modifierProfil'])->name('admin.updateProfil');
+    Route::post('/modifier-profil', [AdminController::class, 'updateProfil'])->name('admin.updateProfil');
 
     //etant donner que c'est le meme principe on va utiliser la meme fonction qu'on a controller VisiteurController
     Route::get('/rechercher-article', [AdminController::class, 'rechercherEtFiltrerArticles'])->name('admin.rechercherArticle');
@@ -276,7 +279,7 @@ Route::prefix('admin')->middleware(['auth:admin'])->group(function (){
 
     // Routes pour les THEMES DE RECHERCHES
     Route::get('/liste-themes', [ThemeController::class, 'index'])->name('admin.listeTheme');
-    
+
     Route::post('/enregistrer-theme', [ThemeController::class, 'create'])->name('admin.enregistrerTheme');
 
     //pour envoyer sur la page de modification
@@ -331,7 +334,7 @@ Route::prefix('admin')->middleware(['auth:admin'])->group(function (){
 
     Route::get('/modifier-umris/{id}', [UmrisController::class, 'edit'])->name('admin.modifierUmris');
 
-    Route::post('/modifier-umris/{id}/umris', [UmrisController::class, 'update'])->name('admin.updateUmris');
+    Route::post('/enregistrerModification-umris/{id}', [UmrisController::class, 'update'])->name('admin.updateUmris');
 
     Route::post('/supprimer-umri/{id}', [UmrisController::class, 'delete'])
     ->name('admin.supprimerUmri');

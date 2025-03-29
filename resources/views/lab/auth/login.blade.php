@@ -73,7 +73,7 @@
 
                 <button type="submit" class="btn mb-2 w-100" style="background-color: #9b59b6; color: white; border:#9b59b6" id="submit-connexion">Se connecter</button>
 
-                {{-- <div class="my-2 text-center mt-2">Pas de compte ? <a href="{{ route('register') }}" class="ml-2">S'inscrire</a></div> --}}
+                <div class="my-2 text-center mt-2">Pas de compte ? <a href="{{ route('register') }}" class="ml-2">S'inscrire</a></div>
             </form>
 
 
