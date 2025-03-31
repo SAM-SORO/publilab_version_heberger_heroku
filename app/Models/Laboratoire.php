@@ -42,13 +42,11 @@ class Laboratoire extends Model
     }
 
     /**
-     * Relation avec Chercheur (many-to-many)
+     * Relation avec Chercheur (hasMany)
      */
     public function chercheurs()
     {
-        return $this->belongsToMany(Chercheur::class, 'chercheur_laboratoire', 'idLabo', 'idCherch')
-            ->withPivot(['niveau', 'dateAffectation']);
-            // ->withTimestamps();
+        return $this->hasMany(Chercheur::class, 'idLabo', 'idLabo');
     }
 
     /**
@@ -60,21 +58,11 @@ class Laboratoire extends Model
     }
 
     /**
-     * Relation avec AxeRecherche (many-to-many)
+     * Relation avec AxeRecherche (hasMany)
      */
     public function axesRecherches()
     {
-        return $this->belongsToMany(AxeRecherche::class, 'laboratoire_axe_recherche', 'idLabo', 'idAxeRech');
-    }
-
-    /**
-     * Obtenir les chercheurs par niveau
-     */
-    public function getChercheursByNiveau($niveau)
-    {
-        return $this->chercheurs()
-            ->wherePivot('niveau', $niveau)
-            ->get();
+        return $this->hasMany(AxeRecherche::class, 'idLabo', 'idLabo');
     }
 
     /**
@@ -83,7 +71,7 @@ class Laboratoire extends Model
     public function getChercheursByDateAffectation($date)
     {
         return $this->chercheurs()
-            ->wherePivot('dateAffectation', '>=', $date)
+            ->where('dateAffectationLabo', '>=', $date)
             ->get();
     }
 
@@ -117,16 +105,6 @@ class Laboratoire extends Model
     public function getNbChercheurs()
     {
         return $this->chercheurs()->count();
-    }
-
-    /**
-     * Vérifie si un chercheur est membre du laboratoire
-     */
-    public function hasChercheur($idChercheur)
-    {
-        return $this->chercheurs()
-            ->where('idCherch', $idChercheur)
-            ->exists();
     }
 
     /**

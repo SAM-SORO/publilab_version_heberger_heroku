@@ -47,20 +47,13 @@ class LaboratoireController extends Controller
             'emailLabo' => 'nullable|email|max:255',
             'descLabo' => 'nullable|string',
             'idUMRI' => 'nullable|exists:umris,idUMRI',
-            'axesRecherche' => 'nullable|array',
-            'axesRecherche.*' => 'exists:axe_recherches,idAxeRech',
+            'idDirecteurLabo' => 'nullable|exists:chercheurs,idCherch'
         ]);
 
-        DB::beginTransaction(); // Garder la transaction car on a une relation many-to-many avec axesRecherche
-
         try {
-            $laboratoire = new Laboratoire();
-            $laboratoire->fill($request->except('axesRecherche'));
-            $laboratoire->save();
+            DB::beginTransaction();
 
-            if ($request->has('axesRecherche')) {
-                $laboratoire->axesRecherches()->sync($request->axesRecherche);
-            }
+            $laboratoire = Laboratoire::create($request->all());
 
             DB::commit();
             return redirect()->back()
@@ -156,19 +149,14 @@ class LaboratoireController extends Controller
             'emailLabo' => 'nullable|email|max:255',
             'descLabo' => 'nullable|string',
             'idUMRI' => 'nullable|exists:umris,idUMRI',
-            'axesRecherche' => 'nullable|array',
-            'axesRecherche.*' => 'exists:axe_recherches,idAxeRech',
+            'idDirecteurLabo' => 'nullable|exists:chercheurs,idCherch'
         ]);
 
-        DB::beginTransaction(); // Garder la transaction car on a une relation many-to-many
-
         try {
+            DB::beginTransaction();
+
             $laboratoire = Laboratoire::findOrFail($id);
             $laboratoire->update($validated);
-
-            if (isset($validated['axesRecherche'])) {
-                $laboratoire->axesRecherches()->sync($validated['axesRecherche']);
-            }
 
             DB::commit();
             return redirect()->route('admin.listeLaboratoires')
@@ -192,8 +180,8 @@ class LaboratoireController extends Controller
                 throw new \Exception('Impossible de supprimer ce laboratoire car il a des chercheurs associés.');
             }
 
-            // Détacher les relations avant la suppression
-            $laboratoire->axesRecherches()->detach();
+            // Pour les axes de recherche, mettre leur idLabo à null au lieu de les supprimer
+            $laboratoire->axesRecherches()->update(['idLabo' => null]);
 
             // Supprimer le laboratoire
             $laboratoire->delete();

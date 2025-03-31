@@ -38,7 +38,7 @@
                                 Titre <span class="text-danger">*</span>
                             </label>
                             <input type="text" class="form-control @error('titreAxeRech') is-invalid @enderror"
-                                   id="titreAxeRech" name="titreAxeRech" 
+                                   id="titreAxeRech" name="titreAxeRech"
                                    value="{{ old('titreAxeRech', $axeRecherche->titreAxeRech) }}" required>
                             @error('titreAxeRech')
                                 <span class="invalid-feedback">{{ $message }}</span>
@@ -59,6 +59,32 @@
                             @enderror
                         </div>
                     </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Rattachement -->
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-light">
+                <h6 class="mb-0">
+                    <i class="fas fa-building"></i> Rattachement
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="form-group mb-0">
+                    <label for="idLabo" class="font-weight-bold">Laboratoire</label>
+                    <select class="form-control select2 @error('idLabo') is-invalid @enderror"
+                            id="idLabo" name="idLabo" multiple>
+                        @foreach($laboratoires as $labo)
+                            <option value="{{ $labo->idLabo }}"
+                                    {{ old('idLabo', $axeRecherche->idLabo) == $labo->idLabo ? 'selected' : '' }}>
+                                {{ $labo->sigleLabo }}
+                            </option>
+                        @endforeach
+                    </select>
+                    @error('idLabo')
+                        <span class="invalid-feedback">{{ $message }}</span>
+                    @enderror
                 </div>
             </div>
         </div>
@@ -113,4 +139,30 @@
         border-bottom: 1px solid rgba(0,0,0,.125);
     }
 </style>
+@endsection
+
+@section('scripts')
+<script>
+    $(document).ready(function() {
+        $('#idLabo').select2({
+            placeholder: 'Sélectionner un laboratoire',
+            allowClear: true,
+            width: '100%',
+            maximumSelectionLength: 1,
+            language: {
+                noResults: function() {
+                    return "Aucun laboratoire trouvé";
+                },
+                searching: function() {
+                    return "Recherche...";
+                },
+                maximumSelected: function() {
+                    return "Vous ne pouvez sélectionner qu'un seul laboratoire";
+                }
+            }
+        });
+
+        $('.select2-selection').css('min-height', '40px');
+    });
+</script>
 @endsection

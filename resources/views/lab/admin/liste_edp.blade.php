@@ -386,7 +386,7 @@
                                 <label for="idDirecteurEDP" class="font-weight-bold">Directeur</label>
                                 <select class="form-control select2 @error('idDirecteurEDP') is-invalid @enderror"
                                         id="idDirecteurEDP" name="idDirecteurEDP" multiple="multiple">
-                                    <option value="">Sélectionner un directeur</option>
+                                    {{-- <option value="">Sélectionner un directeur</option> --}}
                                     @foreach($chercheurs as $chercheur)
                                         <option value="{{ $chercheur->idCherch }}">
                                             {{ $chercheur->prenomCherch }} {{ $chercheur->nomCherch }}

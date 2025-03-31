@@ -14,7 +14,7 @@ class AxeRechercheController extends Controller
         // Récupérer les axes de recherche avec leurs relations
         $axeRecherches = AxeRecherche::with([
             'themes',
-            'laboratoires.directeur'
+            'laboratoire'  // Changé de laboratoires à laboratoire
         ])
         ->orderByDesc('created_at')
         ->paginate(10);
@@ -33,20 +33,15 @@ class AxeRechercheController extends Controller
             $validated = $request->validate([
                 'titreAxeRech' => 'required|string|max:255|unique:axe_recherches,titreAxeRech',
                 'descAxeRech' => 'nullable|string|max:1000',
-                'laboratoires' => 'nullable|array',
-                'laboratoires.*' => 'exists:laboratoires,idLabo'
+                'idLabo' => 'nullable|exists:laboratoires,idLabo'  // Modification ici
             ]);
 
             // Création de l'axe de recherche
             $axeRecherche = AxeRecherche::create([
                 'titreAxeRech' => $validated['titreAxeRech'],
-                'descAxeRech' => $validated['descAxeRech']
+                'descAxeRech' => $validated['descAxeRech'],
+                'idLabo' => $validated['idLabo'] ?? null  // Ajout de idLabo
             ]);
-
-            // Associer les laboratoires si présents
-            if (isset($validated['laboratoires'])) {
-                $axeRecherche->laboratoires()->attach($validated['laboratoires']);
-            }
 
             return redirect()->route('admin.listeAxeRecherche')
                 ->with('success', 'Axe de recherche créé avec succès.');
@@ -62,14 +57,18 @@ class AxeRechercheController extends Controller
     {
         try {
             // Récupérer l'axe de recherche avec ses relations
-            $axeRecherche = AxeRecherche::with(['themes'])
+            $axeRecherche = AxeRecherche::with(['themes', 'laboratoire'])
                 ->findOrFail($id);
 
-            return view('lab.admin.modifier_axe_recherche', compact('axeRecherche'));
+            // Récupérer tous les laboratoires pour le formulaire
+            $laboratoires = Laboratoire::all();
+
+            return view('lab.admin.modifier_axe_recherche',
+                compact('axeRecherche', 'laboratoires'));
 
         } catch (\Exception $e) {
             return redirect()->route('admin.listeAxeRecherche')
-                ->with('error', 'Impossible de trouver l\'axe de recherche demandé : ' . $e->getMessage());
+                ->with('error', 'Impossible de trouver l\'axe de recherche : ' . $e->getMessage());
         }
     }
 
@@ -78,10 +77,8 @@ class AxeRechercheController extends Controller
         // Validation des données
         $validated = $request->validate([
             'titreAxeRech' => 'required|string|max:255',
-            'descAxeRech' => 'nullable|string'
-        ], [
-            'titreAxeRech.required' => 'Le titre est obligatoire',
-            'titreAxeRech.max' => 'Le titre ne doit pas dépasser 255 caractères'
+            'descAxeRech' => 'nullable|string',
+            'idLabo' => 'nullable|exists:laboratoires,idLabo'  // Ajout de la validation du laboratoire
         ]);
 
         try {
@@ -93,7 +90,8 @@ class AxeRechercheController extends Controller
             // Mise à jour des données
             $axeRecherche->update([
                 'titreAxeRech' => $validated['titreAxeRech'],
-                'descAxeRech' => $validated['descAxeRech']
+                'descAxeRech' => $validated['descAxeRech'],
+                'idLabo' => $validated['idLabo']  // Mise à jour du laboratoire
             ]);
 
             DB::commit();
@@ -113,16 +111,18 @@ class AxeRechercheController extends Controller
         try {
             $query = $request->input('query');
 
-            // Si la recherche est vide, retourner à la liste
             if (empty($query)) {
                 return redirect()->route('admin.listeAxeRecherche');
             }
 
-            $axeRecherches = AxeRecherche::with(['themes'])
+            $axeRecherches = AxeRecherche::with(['themes', 'laboratoire'])  // Changé de laboratoires à laboratoire
                 ->where(function($q) use ($query) {
                     $q->where('titreAxeRech', 'like', '%' . $query . '%')
                       ->orWhere('descAxeRech', 'like', '%' . $query . '%')
-                      // Recherche dans les thèmes associés
+                      ->orWhereHas('laboratoire', function($subQ) use ($query) {  // Recherche dans le laboratoire
+                          $subQ->where('sigleLabo', 'like', '%' . $query . '%')
+                                ->orWhere('nomLabo', 'like', '%' . $query . '%');
+                      })
                       ->orWhereHas('themes', function($subQ) use ($query) {
                           $subQ->where('intituleTheme', 'like', '%' . $query . '%');
                       });
@@ -131,10 +131,10 @@ class AxeRechercheController extends Controller
                 ->paginate(10)
                 ->withQueryString();
 
-            // Récupérer les laboratoires pour le formulaire d'ajout
             $laboratoires = Laboratoire::all();
 
-            return view('lab.admin.liste_axe_recherche', compact('axeRecherches', 'laboratoires', 'query'));
+            return view('lab.admin.liste_axe_recherche',
+                compact('axeRecherches', 'laboratoires', 'query'));
 
         } catch (\Exception $e) {
             return redirect()->route('admin.listeAxeRecherche')
@@ -144,8 +144,6 @@ class AxeRechercheController extends Controller
 
     public function delete($id)
     {
-        DB::beginTransaction();
-
         try {
             $axe = AxeRecherche::findOrFail($id);
 
@@ -153,15 +151,12 @@ class AxeRechercheController extends Controller
                 throw new \Exception('Impossible de supprimer cet axe car il possède des thèmes associés.');
             }
 
-            $axe->laboratoires()->detach();
             $axe->delete();
 
-            DB::commit();
             return redirect()->route('admin.listeAxeRecherche')
                 ->with('success', 'Axe de recherche supprimé avec succès.');
 
         } catch (\Exception $e) {
-            DB::rollBack();
             return redirect()->back()
                 ->with('error', 'Impossible de supprimer l\'axe : ' . $e->getMessage());
         }

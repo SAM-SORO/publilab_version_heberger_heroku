@@ -56,14 +56,6 @@ class Grade extends Model
 
 
     /**
-     * Vérifie si le grade est attribué à des chercheurs
-     */
-    public function isUsed()
-    {
-        return $this->chercheurs()->exists();
-    }
-
-    /**
      * Obtenir la représentation complète du grade
      */
     public function getFullGradeAttribute()

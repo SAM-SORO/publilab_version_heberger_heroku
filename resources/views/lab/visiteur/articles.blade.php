@@ -84,7 +84,6 @@
                                 <div class="ml-3">
                                     <!-- Titre de l'article avec les auteurs -->
                                     <p class="mb-1">
-                                        <span class="font-weight-bold">{{ $article->idArticle }}</span>
                                         <span class="font-weight-bold">{{ $article->titreArticle }}</span>
 
                                         @foreach ($article->chercheurs as $chercheur)
@@ -99,8 +98,6 @@
                                             {{ $doctorant->prenomDoc }} {{ strtoupper($doctorant->nomDoc) }}
                                             @if (!$loop->last),@endif
                                         @endforeach
-
-
                                     </p>
 
                                     <!-- Informations de publication -->
@@ -143,11 +140,14 @@
                                     @endif
 
                                     @if($article->resumeArticle)
-                                        <div class="mt-2">
+                                        <div class="mt-2 resume-container">
                                             <p class="mb-1"><strong>Résumé :</strong></p>
                                             <p class="text-muted">
-                                                {{ Str::words($article->resumeArticle, 15, '...') }}
-                                                <a href="#" data-toggle="modal" data-target="#detailsArticleModal-{{ $article->idArticle }}" class="text-primary">Lire plus</a>
+                                                <span class="short-resume">{{ Str::words($article->resumeArticle, 10, '') }}</span>
+                                                @if(str_word_count($article->resumeArticle) > 10)
+                                                    <span class="full-resume" style="display: none;">{{ $article->resumeArticle }}</span>
+                                                    <a href="#" class="text-primary read-more">Lire plus</a>
+                                                @endif
                                             </p>
                                         </div>
                                     @endif
@@ -162,7 +162,6 @@
                                     @endif
                                 </div>
                             </div>
-
                         </div>
                     </div>
                 @endforeach
@@ -172,18 +171,36 @@
             <div class="d-flex justify-content-center mt-4">
                 {{ $articles->links('vendor.pagination.bootstrap-4') }}
             </div>
-
         @endif
     </div>
-
-
 </div>
 
 <script>
-    document.querySelector('.navbar').classList.add('bg-light');
-    document.querySelector('.navbar').classList.add('custom-nav');
+    document.addEventListener('DOMContentLoaded', function() {
+        // Gestion des clics sur "Lire plus"
+        document.querySelectorAll('.read-more').forEach(function(link) {
+            link.addEventListener('click', function(e) {
+                e.preventDefault();
+
+                const resumeContainer = this.closest('.resume-container');
+                const shortResume = resumeContainer.querySelector('.short-resume');
+                const fullResume = resumeContainer.querySelector('.full-resume');
+
+                if (shortResume.style.display === 'none') {
+                    shortResume.style.display = 'inline';
+                    fullResume.style.display = 'none';
+                    this.textContent = 'Lire plus';
+                } else {
+                    shortResume.style.display = 'none';
+                    fullResume.style.display = 'inline';
+                    this.textContent = 'Lire moins';
+                }
+            });
+        });
+
+        // Style de la navbar
+        document.querySelector('.navbar').classList.add('bg-light');
+        document.querySelector('.navbar').classList.add('custom-nav');
+    });
 </script>
 @endsection
-
-
-

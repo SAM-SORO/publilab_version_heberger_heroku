@@ -24,16 +24,14 @@ return new class extends Migration
             $table->date('dateArriveeCherch')->nullable();
             $table->string('telCherch', 30)->nullable();
             $table->unsignedBigInteger('idUMRI')->nullable();
+            $table->unsignedBigInteger('idLabo')->nullable();
+            $table->date('dateAffectationLabo')->nullable();
             $table->timestamps();
         });
     }
-
 
     public function down(): void
     {
         Schema::dropIfExists('chercheurs');
     }
 };
-
-
-// $table->foreign('id_labo')->references('id')->on('laboratoires')->onDelete('cascade');

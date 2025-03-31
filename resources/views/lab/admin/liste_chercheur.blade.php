@@ -171,13 +171,21 @@
                                     <span class="badge badge-info">{{ $chercheur->doctorantsEncadres->count() }}</span>
                                 </p>
 
-                                <p class="mb-1">
-                                    <i class="fas fa-flask text-secondary"></i>
-                                    <span class="font-weight-bold">Laboratoires :</span>
-                                    <span class="badge badge-info">{{ $chercheur->laboratoires->count() }}</span>
-                                </p>
-                            </div>
+                                @if($chercheur->laboratoire)
+                                    <!-- Modifier cette partie pour le laboratoire unique -->
+                                    <p class="mb-1">
+                                        <i class="fas fa-flask text-secondary"></i>
+                                        <span class="font-weight-bold">Laboratoire :</span>
+                                        <span class="badge badge-success">{{ $chercheur->laboratoire->sigleLabo }}</span>
+                                        @if($chercheur->dateAffectationLabo)
+                                            <small class="text-muted">
+                                                (Depuis le {{ $chercheur->dateAffectationLabo->format('d/m/Y') }})
+                                            </small>
+                                        @endif
+                                    </p>
+                                @endif
 
+                            </div>
 
                         </div>
                         <div class="card-footer bg-light">
@@ -338,30 +346,33 @@
                                     </div>
                                 @endif
 
-                                <!-- Laboratoires -->
-                                @if($chercheur->laboratoires->isNotEmpty())
+                                <!-- Laboratoire -->
+                                @if($chercheur->laboratoire)
                                     <div class="mb-4">
                                         <h6 class="font-weight-bold text-info mb-3">
-                                            <i class="fas fa-flask"></i> Laboratoires
-                                            <span class="badge badge-info">{{ $chercheur->laboratoires->count() }}</span>
+                                            <i class="fas fa-flask"></i> Laboratoire
                                         </h6>
-                                        <div class="row">
-                                            @foreach($chercheur->laboratoires as $laboratoire)
-                                                <div class="col-12 mb-2">
-                                                    <div class="card">
-                                                        <div class="card-body py-2">
-                                                            <h6 class="card-title mb-0">
-                                                                <i class="fas fa-flask text-secondary"></i>
-                                                                {{ $laboratoire->nomLabo }} ({{ $laboratoire->sigleLabo }})
-                                                                @if($laboratoire->pivot->niveau == 1)
-                                                                    <span class="badge badge-primary">Principal</span>
-                                                                @endif
-                                                            </h6>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            @endforeach
+                                        <div class="card">
+                                            <div class="card-body py-2">
+                                                <h6 class="card-title mb-0">
+                                                    <i class="fas fa-flask text-secondary"></i>
+                                                    {{ $chercheur->laboratoire->nomLabo }}
+                                                    <span class="badge badge-info">{{ $chercheur->laboratoire->sigleLabo }}</span>
+                                                    @if($chercheur->dateAffectationLabo)
+                                                        <small class="text-muted">
+                                                            (Depuis le {{ $chercheur->dateAffectationLabo->format('d/m/Y') }})
+                                                        </small>
+                                                    @endif
+                                                </h6>
+                                            </div>
                                         </div>
+                                    </div>
+                                @else
+                                    <div class="mb-4">
+                                        <h6 class="font-weight-bold text-info mb-3">
+                                            <i class="fas fa-flask"></i> Laboratoire
+                                        </h6>
+                                        <p class="text-muted mb-0">Aucun laboratoire assigné</p>
                                     </div>
                                 @endif
 
@@ -386,6 +397,17 @@
                                                 </div>
                                             @endforeach
                                         </div>
+                                    </div>
+                                @endif
+
+                                <!-- Laboratoire et date d'affectation -->
+                                @if($chercheur->laboratoire)
+                                    <div class="mb-3">
+                                        <strong>Laboratoire :</strong>
+                                        {{ $chercheur->laboratoire->sigleLabo }}
+                                        @if($chercheur->dateAffectationLabo)
+                                            <small class="text-muted">(Depuis le {{ $chercheur->dateAffectationLabo->format('d/m/Y') }})</small>
+                                        @endif
                                     </div>
                                 @endif
                             </div>
@@ -602,6 +624,29 @@
                                     @enderror
                                 </div>
                             </div>
+
+                            <!-- Laboratoire -->
+                            <div class="form-group">
+                                <label for="idLabo" class="font-weight-bold">Laboratoire</label>
+                                <select class="form-control select2" id="idLabo" name="idLabo" multiple>
+                                    {{-- <option value="">Sélectionner un laboratoire</option> --}}
+                                    @foreach($laboratoires as $labo)
+                                        <option value="{{ $labo->idLabo }}"
+                                            {{ old('idLabo', $chercheur->idLabo ?? '') == $labo->idLabo ? 'selected' : '' }}>
+                                            {{ $labo->sigleLabo }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                            </div>
+
+                            <!-- Date d'affectation au laboratoire -->
+                            <div class="form-group">
+                                <label for="dateAffectationLabo" class="font-weight-bold">Date d'affectation au laboratoire</label>
+                                <input type="date" class="form-control" id="dateAffectationLabo"
+                                    name="dateAffectationLabo"
+                                    value="{{ old('dateAffectationLabo', $chercheur->dateAffectationLabo ?? '') }}">
+                            </div>
+
                         </div>
                     </div>
 
@@ -766,6 +811,29 @@
 
         // Rendre la fonction disponible globalement
         window.confirmDelete = confirmDelete;
+    });
+</script>
+<script>
+    $(document).ready(function() {
+        $('#idLabo').select2({
+            placeholder: 'Sélectionner un laboratoire',
+            allowClear: true,
+            width: '100%',
+            maximumSelectionLength: 1,
+            language: {
+                noResults: function() {
+                    return "Aucun laboratoire trouvé";
+                },
+                searching: function() {
+                    return "Recherche...";
+                },
+                maximumSelectionLength: function() {
+                    return "Vous ne pouvez sélectionner qu'un seul laboratoire";
+                }
+            }
+        });
+
+        $('.select2-selection').css('min-height', '40px');
     });
 </script>
 @endsection

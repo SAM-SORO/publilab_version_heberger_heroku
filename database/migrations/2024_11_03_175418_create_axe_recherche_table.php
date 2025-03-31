@@ -15,6 +15,8 @@ return new class extends Migration
             $table->id('idAxeRech');
             $table->string('titreAxeRech');
             $table->text('descAxeRech')->nullable();
+            $table->unsignedBigInteger('idLabo')->nullable();  
+            $table->foreign('idLabo')->references('idLabo')->on('laboratoires')->onDelete('cascade');
             $table->timestamps();
         });
 

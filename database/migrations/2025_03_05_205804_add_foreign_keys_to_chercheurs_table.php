@@ -13,13 +13,16 @@ return new class extends Migration
     {
         Schema::table('chercheurs', function (Blueprint $table) {
             $table->foreign('idUMRI')->references('idUMRI')->on('umris')->onDelete('cascade');
+            $table->foreign('idLabo')->references('idLabo')->on('laboratoires')->onDelete('set null');
         });
+
     }
 
     public function down(): void
     {
         Schema::table('chercheurs', function (Blueprint $table) {
             $table->dropForeign(['idUMRI']);
+            $table->dropForeign(['idLabo']);
         });
     }
 

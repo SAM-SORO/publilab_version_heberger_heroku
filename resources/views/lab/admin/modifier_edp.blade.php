@@ -79,8 +79,8 @@
                 <div class="form-group">
                     <label for="idDirecteurEDP" class="font-weight-bold">Directeur</label>
                     <select class="form-control @error('idDirecteurEDP') is-invalid @enderror"
-                            id="idDirecteurEDP" name="idDirecteurEDP">
-                        <option value="">Sélectionner un directeur</option>
+                            id="idDirecteurEDP" name="idDirecteurEDP" multiple>
+                        {{-- <option value="">Sélectionner un directeur</option> --}}
                         @foreach($chercheurs as $chercheur)
                             <option value="{{ $chercheur->idCherch }}"
                                 {{ old('idDirecteurEDP', $edp->idDirecteurEDP) == $chercheur->idCherch ? 'selected' : '' }}>

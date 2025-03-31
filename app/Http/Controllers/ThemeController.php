@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Theme;
+use App\Models\Doctorant;
 use App\Models\AxeRecherche;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -105,7 +106,16 @@ class ThemeController extends Controller
         ]);
 
         try {
+            DB::beginTransaction();
+
             $theme = Theme::findOrFail($id);
+
+            // Vérifier si l'état d'attribution passe de true à false
+            if ($theme->etatAttribution && !isset($validated['etatAttribution'])) {
+                // Mettre à jour les doctorants associés à ce thème
+                Doctorant::where('idTheme', $theme->idTheme)
+                    ->update(['idTheme' => null]);
+            }
 
             // Préparer les données pour la mise à jour
             $dataToUpdate = [
@@ -117,9 +127,14 @@ class ThemeController extends Controller
 
             $theme->update($dataToUpdate);
 
+            DB::commit();
             return redirect()->route('admin.listeTheme')
-                ->with('success', 'Thème modifié avec succès.');
+                ->with('success', 'Thème modifié avec succès. ' .
+                    (!isset($validated['etatAttribution']) && $theme->etatAttribution ?
+                    'Les doctorants associés ont été détachés.' : ''));
+
         } catch (\Exception $e) {
+            DB::rollBack();
             return redirect()->back()
                 ->withInput()
                 ->with('error', 'Erreur lors de la modification : ' . $e->getMessage());

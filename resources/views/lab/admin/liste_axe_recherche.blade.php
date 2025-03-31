@@ -5,9 +5,9 @@
 @section('content')
 
 <div class="container-fluid">
-  
 
-    <div class="mb-4">
+
+    <div class="mb-4 mt-4">
         @include("lab.partials.alerts")
     </div>
 
@@ -16,8 +16,8 @@
         <div class="card-body">
             <form action="{{ route('admin.rechercherAxeRecherch') }}" method="GET" class="mb-0">
                 <div class="input-group">
-                    <input type="text" class="form-control" name="query" 
-                           placeholder="Rechercher un axe de recherche..." 
+                    <input type="text" class="form-control" name="query"
+                           placeholder="Rechercher un axe de recherche..."
                            value="{{ request()->query('query') }}">
                     <div class="input-group-append">
                         <button class="btn btn-outline-primary" type="submit">
@@ -49,12 +49,17 @@
                 <div class="col-md-6 mb-4">
                     <div class="card shadow h-100">
                         <div class="card-header bg-dark text-white">
-                            <h5 class="card-title mb-0">{{ $axe->titreAxeRech }}</h5>
+                            <h6 class="card-title mb-0">{{ $axe->titreAxeRech }}</h6>
                         </div>
                         <div class="card-body">
-                            <!-- Description -->
-                            @if($axe->descAxeRech)
-                                <p class="card-text">{{ $axe->descAxeRech }}</p>
+                            <!-- Ajouter l'information du laboratoire -->
+                            @if($axe->laboratoire)
+                                <p class="mb-3">
+                                    <i class="fas fa-building text-primary"></i>
+                                    <strong>Laboratoire :</strong>
+                                    <span class="badge badge-info">{{ $axe->laboratoire->sigleLabo }}</span>
+                                </p>
+
                             @endif
 
                             <!-- Statistiques -->
@@ -129,7 +134,7 @@
                                                 Titre <span class="text-danger">*</span>
                                             </label>
                                             <input type="text" class="form-control @error('titreAxeRech') is-invalid @enderror"
-                                                   id="titreAxeRech" name="titreAxeRech" 
+                                                   id="titreAxeRech" name="titreAxeRech"
                                                    value="{{ old('titreAxeRech') }}" required>
                                             @error('titreAxeRech')
                                                 <span class="invalid-feedback">{{ $message }}</span>
@@ -150,6 +155,21 @@
                                             @enderror
                                         </div>
                                     </div>
+                                </div>
+                                <div class="form-group">
+                                    <label for="idLabo" class="font-weight-bold">Laboratoire</label>
+                                    <select class="form-control select2 @error('idLabo') is-invalid @enderror"
+                                            id="idLabo" name="idLabo" multiple>
+                                        {{-- <option value="">Sélectionner un laboratoire</option> --}}
+                                        @foreach($laboratoires as $labo)
+                                            <option value="{{ $labo->idLabo }}">
+                                                {{ $labo->sigleLabo }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                    @error('idLabo')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
                                 </div>
                             </div>
                         </div>
@@ -208,7 +228,7 @@
                     <div class="card shadow-sm">
                         <div class="card-header bg-light">
                             <h6 class="mb-0">
-                                <i class="fas fa-bookmark"></i> Thèmes associés 
+                                <i class="fas fa-bookmark"></i> Thèmes associés
                                 <span class="badge badge-info">{{ $axe->themes->count() }}</span>
                             </h6>
                         </div>
@@ -308,4 +328,30 @@
         margin-right: auto;
     }
 </style>
+@endsection
+
+@section('scripts')
+<script>
+    $(document).ready(function() {
+        $('#idLabo').select2({
+            placeholder: 'Sélectionner un laboratoire',
+            allowClear: true,
+            width: '100%',
+            maximumSelectionLength: 1,
+            language: {
+                noResults: function() {
+                    return "Aucun laboratoire trouvé";
+                },
+                searching: function() {
+                    return "Recherche...";
+                },
+                maximumSelected: function() {
+                    return "Vous ne pouvez sélectionner qu'un seul laboratoire";
+                }
+            }
+        });
+
+        $('.select2-selection').css('min-height', '40px');
+    });
+</script>
 @endsection

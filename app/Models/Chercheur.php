@@ -30,7 +30,9 @@ class Chercheur extends Authenticatable
         'dateNaissCherch',
         'dateArriveeCherch',
         'telCherch',
-        'idUMRI'
+        'idUMRI',
+        'idLabo',
+        'dateAffectationLabo'
     ];
 
     protected $hidden = [
@@ -42,7 +44,8 @@ class Chercheur extends Authenticatable
         'password' => 'hashed',
         'dateNaissCherch' => 'date',
         'dateArriveeCherch' => 'date',
-        'genreCherch' => 'string'
+        'genreCherch' => 'string',
+        'dateAffectationLabo' => 'date'
     ];
 
     /**
@@ -109,15 +112,6 @@ class Chercheur extends Authenticatable
     }
 
     /**
-     * Relation avec les laboratoires (many-to-many)
-     */
-    public function laboratoires()
-    {
-        return $this->belongsToMany(Laboratoire::class, 'chercheur_laboratoire', 'idCherch', 'idLabo')
-            ->withPivot(['dateAffectation', 'niveau']);
-    }
-
-    /**
      * Relation avec Grade (many-to-many)
      */
     public function grades()
@@ -125,17 +119,6 @@ class Chercheur extends Authenticatable
         return $this->belongsToMany(Grade::class, 'chercheur_grade', 'idCherch', 'idGrade')
             ->withPivot('dateGrade');
     }
-
-    /**
-     * Obtenir le laboratoire principal actuel
-     */
-    public function getLaboratoirePrincipal()
-    {
-        return $this->laboratoires()
-            ->wherePivot('niveau', 1)
-            ->first();
-    }
-
 
     /**
      * Obtenir le nom complet du chercheur
@@ -209,6 +192,12 @@ class Chercheur extends Authenticatable
     public function umri()
     {
         return $this->belongsTo(UMRI::class, 'idUMRI', 'idUMRI');
+    }
+
+    // Relation avec Laboratoire (one-to-many)
+    public function laboratoire()
+    {
+        return $this->belongsTo(Laboratoire::class, 'idLabo', 'idLabo');
     }
 }
 

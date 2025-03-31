@@ -17,7 +17,7 @@ class LaboChercheurController extends Controller
     public function index()
     {
         // Récupérer les chercheurs avec leurs grades et leur laboratoire associés, triés par date de création en ordre décroissant
-        $chercheurs = Chercheur::with(['grades', 'laboratoires', 'umri'])
+        $chercheurs = Chercheur::with(['grades', 'laboratoire', 'umri']) // changé de laboratoires à laboratoire
             ->orderByDesc('created_at') // Tri par date de création (vous pouvez changer ce champ si nécessaire)
             ->paginate(10); // Pagination avec 10 résultats par page
 
@@ -58,7 +58,9 @@ class LaboChercheurController extends Controller
             'laboratoires' => 'nullable|array',
             'laboratoires.*' => 'exists:laboratoires,idLabo',
             'dateAffectation' => 'nullable|array',
-            'dateAffectation.*' => 'nullable|date'
+            'dateAffectation.*' => 'nullable|date',
+            'idLabo' => 'nullable|exists:laboratoires,idLabo',
+            'dateAffectationLabo' => 'nullable|date'
         ], [
             'nomCherch.required' => 'Le nom est obligatoire.',
             'prenomCherch.required' => 'Le prénom est obligatoire.',
@@ -83,22 +85,12 @@ class LaboChercheurController extends Controller
                 'dateNaissCherch' => $validated['dateNaissCherch'] ?? null,
                 'dateArriveeCherch' => $validated['dateArriveeCherch'] ?? null,
                 'telCherch' => $validated['telCherch'] ?? null,
-                'idUMRI' => $validated['idUMRI'] ?? null
+                'idUMRI' => $validated['idUMRI'] ?? null,
+                'idLabo' => $validated['idLabo'] ?? null,
+                'dateAffectationLabo' => $validated['dateAffectationLabo'] ?? null
             ]);
 
-            // Attacher les laboratoires avec leurs dates d'affectation si présents
-            if (!empty($validated['laboratoires'])) {
-                foreach ($validated['laboratoires'] as $index => $laboId) {
-                    $dateAffectation = isset($validated['dateAffectation'][$laboId])
-                        ? $validated['dateAffectation'][$laboId]
-                        : now();
-
-                    $chercheur->laboratoires()->attach($laboId, [
-                        'dateAffectation' => $dateAffectation,
-                        'niveau' => $index + 1
-                    ]);
-                }
-            }
+            // Supprimer la partie d'attachement des laboratoires qui n'existe plus
 
             DB::commit();
             return redirect()->route('admin.listeChercheurs')
@@ -166,11 +158,10 @@ class LaboChercheurController extends Controller
     public function edit($id)
     {
         try {
-            // Récupérer le chercheur avec ses relations
-            $chercheur = Chercheur::with(['grades', 'laboratoires', 'umri'])
+            // Remplacer 'laboratoires' par 'laboratoire' dans le with()
+            $chercheur = Chercheur::with(['grades', 'laboratoire', 'umri'])
                 ->findOrFail($id);
 
-            // Récupérer tous les grades, laboratoires et UMRI pour les sélecteurs
             $grades = Grade::all();
             $laboratoires = Laboratoire::all();
             $umris = UMRI::all();
@@ -192,7 +183,6 @@ class LaboChercheurController extends Controller
      */
     public function update(Request $request, $id)
     {
-        // Validation des données
         $validated = $request->validate([
             'nomCherch' => 'required|string|max:30',
             'prenomCherch' => 'required|string|max:100',
@@ -208,8 +198,11 @@ class LaboChercheurController extends Controller
             'dateArriveeCherch' => 'nullable|date',
             'telCherch' => 'nullable|string|max:30',
             'idUMRI' => 'nullable|exists:umris,idUMRI',
-            'laboratoires' => 'nullable|array',
-            'laboratoires.*' => 'exists:laboratoires,idLabo',
+            // Supprimer les validations de l'ancienne relation many-to-many
+            // 'laboratoires' => 'nullable|array',
+            // 'laboratoires.*' => 'exists:laboratoires,idLabo',
+            'idLabo' => 'nullable|exists:laboratoires,idLabo',
+            'dateAffectationLabo' => 'nullable|date',
             'grades' => 'nullable|array',
             'grades.*' => 'exists:grades,idGrade',
             'dates' => 'nullable|array',
@@ -222,33 +215,16 @@ class LaboChercheurController extends Controller
             $chercheur = Chercheur::findOrFail($id);
 
             // Mettre à jour les informations de base
-            $chercheur->nomCherch = $validated['nomCherch'];
-            $chercheur->prenomCherch = $validated['prenomCherch'];
-            $chercheur->genreCherch = $validated['genreCherch'] ?? null;
-            $chercheur->matriculeCherch = $validated['matriculeCherch'] ?? null;
-            $chercheur->emploiCherch = $validated['emploiCherch'] ?? null;
-            $chercheur->departementCherch = $validated['departementCherch'] ?? null;
-            $chercheur->fonctionAdministrativeCherch = $validated['fonctionAdministrativeCherch'] ?? null;
-            $chercheur->specialiteCherch = $validated['specialiteCherch'] ?? null;
-            $chercheur->emailCherch = $validated['emailCherch'];
-            $chercheur->dateNaissCherch = $validated['dateNaissCherch'] ?? null;
-            $chercheur->dateArriveeCherch = $validated['dateArriveeCherch'] ?? null;
-            $chercheur->telCherch = $validated['telCherch'] ?? null;
-            $chercheur->idUMRI = $validated['idUMRI'] ?? null;
+            $updateData = array_filter($validated, function($key) {
+                return !in_array($key, ['password', 'grades', 'dates']);
+            }, ARRAY_FILTER_USE_KEY);
 
-            // Mettre à jour le mot de passe si fourni
+            // Mise à jour du mot de passe si fourni
             if (!empty($validated['password'])) {
-                $chercheur->password = Hash::make($validated['password']);
+                $updateData['password'] = Hash::make($validated['password']);
             }
 
-            $chercheur->save();
-
-            // Mettre à jour les laboratoires
-            if (isset($validated['laboratoires'])) {
-                $chercheur->laboratoires()->sync($validated['laboratoires']);
-            } else {
-                $chercheur->laboratoires()->detach();
-            }
+            $chercheur->update($updateData);
 
             // Mettre à jour les grades avec leurs dates
             if (isset($validated['grades'])) {
@@ -259,8 +235,6 @@ class LaboChercheurController extends Controller
                     ];
                 }
                 $chercheur->grades()->sync($gradesWithDates);
-            } else {
-                $chercheur->grades()->detach();
             }
 
             DB::commit();
@@ -283,7 +257,7 @@ class LaboChercheurController extends Controller
             $query = $request->input('query');
 
             // Base query avec les relations nécessaires
-            $chercheurs = Chercheur::with(['grades', 'laboratoires', 'umri']);
+            $chercheurs = Chercheur::with(['grades', 'laboratoire', 'umri']); // changé de laboratoires à laboratoire
 
             if ($query) {
                 // Si la recherche contient un espace, on considère que c'est une recherche par nom complet
@@ -311,7 +285,7 @@ class LaboChercheurController extends Controller
                           ->orWhere('prenomCherch', 'like', '%' . $query . '%')
                           ->orWhere('matriculeCherch', 'like', '%' . $query . '%')
                           ->orWhere('emailCherch', 'like', '%' . $query . '%')
-                          ->orWhereHas('laboratoires', function($subQ) use ($query) {
+                          ->orWhereHas('laboratoire', function($subQ) use ($query) { // changé de laboratoires à laboratoire
                               $subQ->where('sigleLabo', 'like', '%' . $query . '%')
                                    ->orWhere('nomLabo', 'like', '%' . $query . '%');
                           })
@@ -364,7 +338,6 @@ class LaboChercheurController extends Controller
             DB::beginTransaction();
 
             // Supprimer les relations many-to-many
-            $chercheur->laboratoires()->detach();
             $chercheur->grades()->detach();
 
             // Supprimer le chercheur

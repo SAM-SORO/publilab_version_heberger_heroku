@@ -124,19 +124,19 @@ class GradeController extends Controller
         try {
             $grade = Grade::findOrFail($id);
 
-            if ($grade->isUsed()) {
-                throw new \Exception('Impossible de supprimer ce grade car il est actuellement attribué à des chercheurs.');
-            }
+            // Détacher tous les chercheurs associés à ce grade
+            $grade->chercheurs()->detach();
 
+            // Supprimer le grade
             $grade->delete();
 
             DB::commit();
             return redirect()->route('admin.listeGrade')
-                ->with('success', 'Grade supprimé avec succès.');
+                ->with('success', 'Grade supprimé avec succès. Les associations avec les chercheurs ont été supprimées.');
         } catch (\Exception $e) {
             DB::rollBack();
             return redirect()->route('admin.listeGrade')
-                ->with('error', $e->getMessage());
+                ->with('error', 'Erreur lors de la suppression : ' . $e->getMessage());
         }
     }
 

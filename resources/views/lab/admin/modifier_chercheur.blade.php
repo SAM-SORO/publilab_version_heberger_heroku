@@ -236,22 +236,39 @@
                         @enderror
                     </div>
 
-                    <!-- Laboratoires -->
-                    <div class="col-md-6 form-group">
-                        <label for="laboratoires" class="font-weight-bold">Laboratoires</label>
-                        <select class="form-control select2 @error('laboratoires') is-invalid @enderror"
-                                id="laboratoires" name="laboratoires[]" multiple>
-                            @foreach($laboratoires as $labo)
-                                <option value="{{ $labo->idLabo }}"
-                                    {{ (old('laboratoires') && in_array($labo->idLabo, old('laboratoires'))) ||
-                                       (!old('laboratoires') && $chercheur->laboratoires->contains('idLabo', $labo->idLabo)) ? 'selected' : '' }}>
-                                    {{ $labo->sigleLabo }}
-                                </option>
-                            @endforeach
-                        </select>
-                        @error('laboratoires')
-                            <span class="invalid-feedback">{{ $message }}</span>
-                        @enderror
+                    <!-- Laboratoire -->
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label for="idLabo" class="font-weight-bold">Laboratoire</label>
+                            <select class="form-control select2 @error('idLabo') is-invalid @enderror"
+                                    id="idLabo" name="idLabo">
+                                <option value="">Sélectionner un laboratoire</option>
+                                @foreach($laboratoires as $labo)
+                                    <option value="{{ $labo->idLabo }}"
+                                        {{ old('idLabo', $chercheur->idLabo) == $labo->idLabo ? 'selected' : '' }}>
+                                        {{ $labo->sigleLabo }} - {{ $labo->nomLabo }}
+                                    </option>
+                                @endforeach
+                            </select>
+                            @error('idLabo')
+                                <span class="invalid-feedback">{{ $message }}</span>
+                            @enderror
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Date d'affectation au laboratoire -->
+                <div class="row mt-3">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label for="dateAffectationLabo" class="font-weight-bold">Date d'affectation au laboratoire</label>
+                            <input type="date" class="form-control @error('dateAffectationLabo') is-invalid @enderror"
+                                   id="dateAffectationLabo" name="dateAffectationLabo"
+                                   value="{{ old('dateAffectationLabo', $chercheur->dateAffectationLabo?->format('Y-m-d')) }}">
+                            @error('dateAffectationLabo')
+                                <span class="invalid-feedback">{{ $message }}</span>
+                            @enderror
+                        </div>
                     </div>
                 </div>
             </div>
@@ -295,14 +312,41 @@
 @section('scripts')
 <script>
     $(document).ready(function() {
-        // Initialisation de Select2 pour tous les sélecteurs
-        $('.select2').select2({
+        $('#idLabo').select2({
+            placeholder: 'Sélectionner un laboratoire',
+            allowClear: true,
             width: '100%',
-            placeholder: 'Sélectionner...',
-            allowClear: true
+            maximumSelectionLength: 1,
+            language: {
+                noResults: function() {
+                    return "Aucun laboratoire trouvé";
+                },
+                searching: function() {
+                    return "Recherche...";
+                },
+                maximumSelectionLength: function() {
+                    return "Vous ne pouvez sélectionner qu'un seul laboratoire";
+                }
+            }
         });
 
-        $('.select2-selection').css('min-height', '40px'); // Applique la hauteur après initialisation
+
+        $('#grades').select2({
+            width: '100%',
+            placeholder: 'Sélectionner...',
+            allowClear: true,
+            language: {
+                noResults: function() {
+                    return "Aucune base trouvée";
+                },
+                searching: function() {
+                    return "Recherche...";
+                },
+
+            },
+        });
+
+        $('.select2-selection').css('min-height', '40px');
     });
 </script>
 @endsection

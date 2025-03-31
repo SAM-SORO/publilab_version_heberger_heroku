@@ -14,22 +14,18 @@ class AxeRecherche extends Model
 
     protected $fillable = [
         'titreAxeRech',
-        'descAxeRech'
+        'descAxeRech',
+        'idLabo'  // Ajout du champ
     ];
 
     /**
-     * Relation avec Laboratoire (many-to-many)
+     * Relation avec Laboratoire (one-to-many)
      * Un axe de recherche peut être associé à plusieurs laboratoires,
      * et un laboratoire peut avoir plusieurs axes de recherche
      */
-    public function laboratoires()
+    public function laboratoire()
     {
-        return $this->belongsToMany(
-            Laboratoire::class,
-            'laboratoire_axe_recherche',
-            'idAxeRech',
-            'idLabo'
-        );
+        return $this->belongsTo(Laboratoire::class, 'idLabo', 'idLabo');
     }
 
     /**
@@ -62,14 +58,6 @@ class AxeRecherche extends Model
     }
 
     /**
-     * Vérifie si l'axe a des laboratoires associés
-     */
-    public function hasLaboratoires()
-    {
-        return $this->laboratoires()->exists();
-    }
-
-    /**
      * Vérifie si l'axe a des thèmes
      */
     public function hasThemes()
@@ -83,13 +71,5 @@ class AxeRecherche extends Model
     public function getThemesCount()
     {
         return $this->themes()->count();
-    }
-
-    /**
-     * Obtenir le nombre de laboratoires associés
-     */
-    public function getLaboratoiresCount()
-    {
-        return $this->laboratoires()->count();
     }
 }
