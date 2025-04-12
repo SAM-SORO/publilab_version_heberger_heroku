@@ -241,8 +241,8 @@
                         <div class="form-group">
                             <label for="idLabo" class="font-weight-bold">Laboratoire</label>
                             <select class="form-control select2 @error('idLabo') is-invalid @enderror"
-                                    id="idLabo" name="idLabo">
-                                <option value="">Sélectionner un laboratoire</option>
+                                    id="idLabo" name="idLabo" multiple>
+                                {{-- <option value="">Sélectionner un laboratoire</option> --}}
                                 @foreach($laboratoires as $labo)
                                     <option value="{{ $labo->idLabo }}"
                                         {{ old('idLabo', $chercheur->idLabo) == $labo->idLabo ? 'selected' : '' }}>
